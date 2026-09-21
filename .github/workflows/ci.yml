@@ -90,8 +90,14 @@ jobs:
         run: |
           if [ -f client/package.json ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
+            if node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('client/package.json', 'utf8')); process.exit(pkg.scripts?.test ? 0 : 1)"; then
+              echo "has-test-script=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "has-test-script=false" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "has-test-script=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Node.js
@@ -119,9 +125,13 @@ jobs:
         run: npm run lint
 
       - name: Run client tests
-        if: ${{ steps.client-project.outputs.exists == 'true' }}
+        if: ${{ steps.client-project.outputs.exists == 'true' && steps.client-project.outputs.has-test-script == 'true' }}
         working-directory: client
         run: npm test
+
+      - name: Skip client tests
+        if: ${{ steps.client-project.outputs.exists == 'true' && steps.client-project.outputs.has-test-script != 'true' }}
+        run: echo "No client test script defined in client/package.json. Skipping client tests for now."
 
       - name: Skip client checks
         if: ${{ steps.client-project.outputs.exists != 'true' }}
