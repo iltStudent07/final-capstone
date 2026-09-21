@@ -1,0 +1,385 @@
+/*-----Global Styles-----*/
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    overflow-x: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/*-----Navbar-----*/
+.navbar {
+    background-color: darkblue;
+    color: whitesmoke;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 15px 30px;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.navbar h4 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.navbar div {
+    display: flex;
+}
+
+.navbar ul {
+    display: flex;
+    gap: 25px;
+    list-style: none;
+}
+
+.navbar li {
+    list-style-type: none;
+}
+
+.navbar a {
+    color: whitesmoke;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.navbar a:hover {
+    color: rgb(39, 187, 39);
+    text-shadow: 0 0 8px rgba(39, 187, 39, 0.5);
+}
+
+a {
+    color: whitesmoke;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    color: rgb(39, 187, 39);
+}
+
+/*-----Page Layout-----*/
+main {
+    flex: 1;
+}
+
+/*-----Landing Page-----*/
+.landing {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.landing .hero {
+    background: linear-gradient(180deg, #0453a7 0%, #0a5fc7 100%);
+    color: whitesmoke;
+    text-align: center;
+    padding: 60px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 450px;
+}
+
+.landing .hero h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: whitesmoke;
+}
+
+.landing .hero p {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    max-width: 600px;
+    line-height: 1.8;
+}
+
+.landing button {
+    background: rgb(39, 187, 39);
+    padding: 14px 32px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: inline-block;
+    box-shadow: 0 4px 12px rgba(39, 187, 39, 0.3);
+}
+
+.landing button:hover {
+    background: rgb(30, 150, 30);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(39, 187, 39, 0.5);
+}
+
+.landing button a {
+    color: whitesmoke;
+    font-size: 1rem;
+    display: block;
+}
+
+/*-----Key Features Section-----*/
+.key-features {
+    padding: 80px 30px;
+    background: #f5f5f5;
+}
+
+.key-features h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 50px;
+    color: #333;
+}
+
+.key-features > div {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.landing .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.landing .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.landing .card h3 {
+    color: #0453a7;
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+}
+
+.landing .card p {
+    color: #666;
+    line-height: 1.8;
+}
+
+.landing .card-body {
+    flex-shrink: 2;
+}
+
+/*-----Tech Stack Page-----*/
+.key-features section {
+    padding: 40px 20px;
+}
+
+/*-----Team Page-----*/
+.team-section {
+    padding: 60px 30px;
+    background: #f5f5f5;
+}
+
+.team-section h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 50px;
+    color: #333;
+}
+
+.team-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.team-member {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.team-member:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.team-member h2 {
+    color: #0453a7;
+    margin-bottom: 10px;
+}
+
+.team-member p {
+    color: #666;
+}
+
+/*-----Footer-----*/
+footer {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    padding: 40px 30px;
+    background: #222;
+    color: whitesmoke;
+    margin-top: auto;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+}
+
+footer > div:first-child {
+    text-align: center;
+}
+
+footer > div:first-child p {
+    color: whitesmoke;
+    margin: 0;
+}
+
+footer nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+footer nav h5 {
+    color: whitesmoke;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+footer nav ul {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+footer nav li {
+    list-style-type: none;
+}
+
+footer a {
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+footer a:hover {
+    color: rgb(39, 187, 39);
+}
+
+/*-----Responsive Design-----*/
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px 20px;
+    }
+
+    .navbar ul {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .landing .hero {
+        padding: 40px 20px;
+        min-height: 350px;
+    }
+
+    .landing .hero h1 {
+        font-size: 2rem;
+    }
+
+    .landing .hero p {
+        font-size: 1rem;
+    }
+
+    .key-features {
+        padding: 40px 20px;
+    }
+
+    .key-features h2 {
+        font-size: 1.5rem;
+        margin-bottom: 30px;
+    }
+
+    .landing .card {
+        padding: 20px;
+    }
+
+    .team-container {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+
+    footer {
+        gap: 20px;
+        padding: 25px 20px;
+    }
+
+    footer nav ul {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    html, body {
+        font-size: 14px;
+    }
+
+    .navbar h4 {
+        font-size: 1.2rem;
+    }
+
+    .navbar ul {
+        gap: 10px;
+    }
+
+    .landing .hero {
+        padding: 30px 15px;
+    }
+
+    .landing .hero h1 {
+        font-size: 1.5rem;
+    }
+
+    .landing .hero p {
+        font-size: 0.95rem;
+    }
+
+    .landing button {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .key-features {
+        padding: 30px 15px;
+    }
+
+    .key-features h2 {
+        font-size: 1.3rem;
+    }
+}
