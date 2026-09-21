@@ -54,7 +54,12 @@ jobs:
       - name: Install API dependencies
         if: ${{ steps.api-project.outputs.exists == 'true' }}
         working-directory: api
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Run API lint
         if: ${{ steps.api-project.outputs.exists == 'true' }}
@@ -120,7 +125,12 @@ jobs:
       - name: Install client dependencies
         if: ${{ steps.client-project.outputs.exists == 'true' }}
         working-directory: client
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Run client lint
         if: ${{ steps.client-project.outputs.exists == 'true' }}
