@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import type { User, AuthContextValue } from '../types/types.ts'
+import type { User, AuthContextValue } from '../types/types'
 
 
 // eslint-disable-next-line react-refresh/only-export-components
