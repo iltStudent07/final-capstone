@@ -1,6 +1,26 @@
-import { Schema, model, type InferSchemaType } from 'mongoose'
+import bcrypt from 'bcryptjs'
+import { Schema, model, type HydratedDocument, type Model } from 'mongoose'
 
-const userSchema = new Schema(
+export const USER_ROLES = ['admin', 'member'] as const
+
+export interface IUser {
+  name: string
+  email: string
+  password: string
+  role: (typeof USER_ROLES)[number]
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface IUserMethods {
+  comparePassword(candidatePassword: string): Promise<boolean>
+}
+
+type UserModel = Model<IUser, object, IUserMethods>
+
+export type UserDocument = HydratedDocument<IUser, IUserMethods>
+
+const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   {
     name: {
       type: String,
@@ -17,6 +37,13 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: true,
+      minlength: 6,
+    },
+    role: {
+      type: String,
+      enum: USER_ROLES,
+      default: 'member',
+      required: true,
     },
   },
   {
@@ -24,6 +51,18 @@ const userSchema = new Schema(
   },
 )
 
-export type User = InferSchemaType<typeof userSchema>
+userSchema.pre('save', async function hashPassword() {
+  if (!this.isModified('password')) {
+    return
+  }
 
-export default model('User', userSchema)
+  this.password = await bcrypt.hash(this.password, 10)
+})
+
+userSchema.methods.comparePassword = function comparePassword(candidatePassword: string) {
+  return bcrypt.compare(candidatePassword, this.password)
+}
+
+const User = model<IUser, UserModel>('User', userSchema)
+
+export default User

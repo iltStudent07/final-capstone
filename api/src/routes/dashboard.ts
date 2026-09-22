@@ -10,7 +10,7 @@ router.get('/stats', auth, async (_req, res, next) => {
     const [totalUsers, totalResources, openResources] = await Promise.all([
       User.countDocuments(),
       Resource.countDocuments(),
-      Resource.countDocuments({ status: { $ne: 'done' } }),
+      Resource.where('status').ne('completed').countDocuments(),
     ])
 
     res.json({

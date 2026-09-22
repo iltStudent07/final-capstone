@@ -1,10 +1,12 @@
 import { Router } from 'express'
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import User from '../models/User.js'
+import type { SignOptions } from 'jsonwebtoken'
+import User, { USER_ROLES } from '../models/User.js'
 import { validate } from '../middleware/validate.js'
 
 const router = Router()
+
+const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '1d') as SignOptions['expiresIn']
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null
@@ -27,6 +29,10 @@ const registerValidator = (body: unknown): string[] => {
 
   if (typeof body.password !== 'string' || body.password.length < 6) {
     errors.push('Password must be at least 6 characters long')
+  }
+
+  if (body.role !== undefined && (!USER_ROLES.includes(body.role as (typeof USER_ROLES)[number]))) {
+    errors.push(`Role must be one of: ${USER_ROLES.join(', ')}`)
   }
 
   return errors
@@ -52,10 +58,11 @@ const loginValidator = (body: unknown): string[] => {
 
 router.post('/register', validate(registerValidator), async (req, res, next) => {
   try {
-    const { name, email, password } = req.body as {
+    const { name, email, password, role } = req.body as {
       name: string
       email: string
       password: string
+      role?: (typeof USER_ROLES)[number]
     }
 
     const existingUser = await User.findOne({ email })
@@ -65,11 +72,11 @@ router.post('/register', validate(registerValidator), async (req, res, next) => 
       return
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
+      password,
+      role,
     })
 
     const jwtSecret = process.env.JWT_SECRET
@@ -80,7 +87,7 @@ router.post('/register', validate(registerValidator), async (req, res, next) => 
     }
 
     const token = jwt.sign({ id: user._id, email: user.email }, jwtSecret, {
-      expiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
+      expiresIn: jwtExpiresIn,
     })
 
     res.status(201).json({
@@ -90,6 +97,7 @@ router.post('/register', validate(registerValidator), async (req, res, next) => 
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     })
   } catch (error) {
@@ -111,7 +119,7 @@ router.post('/login', validate(loginValidator), async (req, res, next) => {
       return
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password)
+    const passwordMatch = await user.comparePassword(password)
 
     if (!passwordMatch) {
       res.status(401).json({ message: 'Invalid credentials' })
@@ -126,7 +134,7 @@ router.post('/login', validate(loginValidator), async (req, res, next) => {
     }
 
     const token = jwt.sign({ id: user._id, email: user.email }, jwtSecret, {
-      expiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
+      expiresIn: jwtExpiresIn,
     })
 
     res.status(200).json({
@@ -136,6 +144,7 @@ router.post('/login', validate(loginValidator), async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     })
   } catch (error) {
