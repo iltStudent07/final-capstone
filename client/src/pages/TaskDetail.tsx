@@ -56,51 +56,51 @@ function TaskDetail() {
         }
     }
 
-    if (loading) return <p>Loading...</p>
-    if (!task) return <p>Task not found. <button onClick={() => nav('/tasks')}>Back to Tasks</button></p>
+    if (loading) return <p className="page-message">Loading task...</p>
+    if (!task) return <p className="page-message page-message--error">Task not found. <button className="app-button" onClick={() => nav('/tasks')}>Back to Tasks</button></p>
 
     return (
-        <div>
-            <button onClick={() => nav('/tasks')}>← Back to Tasks</button>
-
-            {/* Claim Information */}
-            <div>
-                <h1>{task.title}</h1>
+        <div className="detail-page">
+            <div className="detail-hero">
                 <div>
-                    <div><strong>Project:</strong> {getProjectLabel(task.project)}</div>
-                    <div><strong>Due Date:</strong> {new Date(task.dueDate).toLocaleDateString()}</div>
-                    <div><strong>Priority:</strong> ${task.priority}</div>
-                    <div><strong>Status:</strong> {task.status}</div>
+                    <p className="page-eyebrow">Task Details</p>
+                    <h1 className="detail-hero__title">{task.title}</h1>
+                </div>
+                <button className="app-button" onClick={() => nav('/tasks')}>← Back to Tasks</button>
+            </div>
+
+            <div className="detail-card">
+                <div className="detail-grid">
+                    <div className="detail-item"><strong>Project</strong>{getProjectLabel(task.project)}</div>
+                    <div className="detail-item"><strong>Due Date</strong>{new Date(task.dueDate).toLocaleDateString()}</div>
+                    <div className="detail-item"><strong>Priority</strong>{task.priority}</div>
+                    <div className="detail-item"><strong>Status</strong>{task.status}</div>
                 </div>
             </div>
 
-            {/* Status Update */}
-            <div className="status-update">
+            <div className="detail-card">
                 <h2>Update Status</h2>
-                <div className="control-group">
-                    <select value={status} onChange={(e) =>     setStatus(e.target.value)}>
-                        <option value="submitted">Submitted</option>
-                        <option value="under-review">Under Review</option>
-                        <option value="approved">Approved</option>
-                        <option value="denied">Denied</option>
-                        <option value="closed">Closed</option>
+                <div className="detail-status-control">
+                    <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
+                        <option value="todo">Todo</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="review">Review</option>
+                        <option value="done">Done</option>
                     </select>
-                    <button onClick={handleStatusUpdate} disabled={updating} className="app-button">
+                    <button onClick={handleStatusUpdate} disabled={updating} className="app-button app-button--primary">
                         {updating ? 'Updating...' : 'Update Status'}
                     </button>
                 </div>
             </div>
 
-            {/* Description */}
-            <div className="description-section">
+            <div className="detail-card">
                 <h2>Description</h2>
                 <p>{task.description}</p>
             </div>
 
-            {/* Delete Button */}
-            <div>
-                <button onClick={handleDelete}>
-                    Delete Claim
+            <div className="detail-actions">
+                <button onClick={handleDelete} className="app-button app-button--danger">
+                    Delete Task
                 </button>
             </div>
         </div>

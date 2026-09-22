@@ -52,50 +52,62 @@ function ProjectDetail() {
         }
     }
 
-    if (loading) return <p>Loading...</p>
-    if (!project) return <p>Project not found. <button onClick={() => nav('/projects')}>Back to Projects</button></p>
+    if (loading) return <p className="page-message">Loading project...</p>
+    if (!project) return <p className="page-message page-message--error">Project not found. <button className="app-button" onClick={() => nav('/projects')}>Back to Projects</button></p>
 
     const ownerName = typeof project.assignee === 'string'
         ? project.assignee
         : project.assignee?.name || 'Unassigned'
 
     return (
-        <div>
-            <button onClick={() => nav('/projects')}>← Back to Projects</button>
-
-            {/* Policy Information */}
-            <div>
-                <h1>{project.title}</h1>
+        <div className="detail-page">
+            <div className="detail-hero">
                 <div>
-                    <div><strong>Description:</strong> {project.description}</div>
-                    <div><strong>Status:</strong>{project.status}</div>
-                    <div><strong>Priority:</strong> {project.priority}</div>
-                    <div><strong>Assigned To:</strong> {ownerName}</div>
-                    <div><strong>Tasks:</strong>  {project.tasks?.map((task) => <div key={task._id}>{task.title}</div>)}</div>
+                    <p className="page-eyebrow">Project Details</p>
+                    <h1 className="detail-hero__title">{project.title}</h1>
+                </div>
+                <button className="app-button" onClick={() => nav('/projects')}>← Back to Projects</button>
+            </div>
+
+            <div className="detail-card">
+                <div className="detail-grid">
+                    <div className="detail-item"><strong>Description</strong>{project.description}</div>
+                    <div className="detail-item"><strong>Status</strong>{project.status}</div>
+                    <div className="detail-item"><strong>Priority</strong>{project.priority}</div>
+                    <div className="detail-item"><strong>Assigned To</strong>{ownerName}</div>
                 </div>
             </div>
 
-            {/* Status Update */}
-            <div className="status-update">
+            <div className="detail-card">
                 <h2>Update Status</h2>
-                <div className="control-group">
-                    <select value={status} onChange={(e) =>     setStatus(e.target.value)}>
+                <div className="detail-status-control">
+                    <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
                         <option value="todo">Todo</option>
-                        <option value="inprogress">In-Progress</option>
+                        <option value="in-progress">In-Progress</option>
                         <option value="review">Review</option>
                         <option value="done">Done</option>
   
                     </select>
-                    <button onClick={handleStatusUpdate} disabled={updating} className="app-button">
+                    <button onClick={handleStatusUpdate} disabled={updating} className="app-button app-button--primary">
                         {updating ? 'Updating...' : 'Update Status'}
                     </button>
                 </div>
             </div>
 
-            {/* Delete Button */}
-            <div className="actions">
-                <button onClick={handleDelete} className="app-button delete-button">
-                    Delete Policy
+            <div className="detail-card">
+                <h2>Tasks</h2>
+                <div className="detail-list">
+                    {project.tasks?.length ? project.tasks.map((task) => (
+                        <div key={task._id} className="detail-list__item">
+                            {task.title}
+                        </div>
+                    )) : <div className="detail-list__item">No tasks assigned.</div>}
+                </div>
+            </div>
+
+            <div className="detail-actions">
+                <button onClick={handleDelete} className="app-button app-button--danger">
+                    Delete Project
                 </button>
             </div>
         </div>
