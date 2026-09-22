@@ -1,23 +1,49 @@
 import { Router } from 'express'
 import Resource from '../models/Resource.js'
-import { auth } from '../middleware/auth.js'
+import { auth, type AuthenticatedRequest } from '../middleware/auth.js'
 
 const router = Router()
 
-router.use(auth)
-
-router.get('/', async (_req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const resources = await Resource.find().sort({ createdAt: -1 })
+    const query = Resource.find()
+
+    if (typeof req.query.status === 'string') {
+      query.where('status').equals(req.query.status)
+    }
+
+    if (typeof req.query.owner === 'string') {
+      query.where('owner').equals(req.query.owner)
+    }
+
+    if (typeof req.query.tag === 'string') {
+      query.where('tags').in([req.query.tag])
+    }
+
+    const resources = await query
+      .populate('owner', 'name email role')
+      .populate('collaborators', 'name email role')
+      .sort({ createdAt: -1 })
+
     res.json(resources)
   } catch (error) {
     next(error)
   }
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', auth, async (req, res, next) => {
   try {
-    const resource = await Resource.create(req.body)
+    const authenticatedUser = (req as AuthenticatedRequest).user
+    const ownerId =
+      typeof authenticatedUser === 'object' && authenticatedUser !== null && 'id' in authenticatedUser
+        ? String(authenticatedUser.id)
+        : req.body.owner
+
+    const resource = await Resource.create({
+      ...req.body,
+      owner: req.body.owner ?? ownerId,
+    })
+
     res.status(201).json(resource)
   } catch (error) {
     next(error)
@@ -27,6 +53,8 @@ router.post('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const resource = await Resource.findById(req.params.id)
+      .populate('owner', 'name email role')
+      .populate('collaborators', 'name email role')
 
     if (!resource) {
       res.status(404).json({ message: 'Resource not found' })
@@ -39,7 +67,7 @@ router.get('/:id', async (req, res, next) => {
   }
 })
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', auth, async (req, res, next) => {
   try {
     const resource = await Resource.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -57,7 +85,7 @@ router.put('/:id', async (req, res, next) => {
   }
 })
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', auth, async (req, res, next) => {
   try {
     const resource = await Resource.findByIdAndDelete(req.params.id)
 

@@ -5,6 +5,7 @@ import connectDB from './config/db.js'
 import authRoutes from './routes/auth.js'
 import dashboardRoutes from './routes/dashboard.js'
 import resourceRoutes from './routes/resource.js'
+import taskRoutes from './routes/task.js'
 import errorHandler from './middleware/errorHandler.js'
 
 dotenv.config()
@@ -21,6 +22,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/resources', resourceRoutes)
+app.use('/api/tasks', taskRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use(errorHandler)
 
