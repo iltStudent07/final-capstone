@@ -4,6 +4,15 @@ import User, { USER_ROLES } from '../models/User.js';
 import { validate } from '../middleware/validate.js';
 const router = Router();
 const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '1d');
+const buildAuthToken = (userId, role, email, secret) => {
+    return jwt.sign({
+        id: userId,
+        role,
+        email,
+    }, secret, {
+        expiresIn: jwtExpiresIn,
+    });
+};
 const isObject = (value) => {
     return typeof value === 'object' && value !== null;
 };
@@ -42,14 +51,16 @@ const loginValidator = (body) => {
 router.post('/register', validate(registerValidator), async (req, res, next) => {
     try {
         const { name, email, password, role } = req.body;
-        const existingUser = await User.findOne({ email });
+        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedName = name.trim();
+        const existingUser = await User.findOne({ email: normalizedEmail });
         if (existingUser) {
-            res.status(409).json({ message: 'User already exists' });
+            res.status(409).json({ message: 'Email is already in use' });
             return;
         }
         const user = await User.create({
-            name,
-            email,
+            name: normalizedName,
+            email: normalizedEmail,
             password,
             role,
         });
@@ -58,9 +69,7 @@ router.post('/register', validate(registerValidator), async (req, res, next) => 
             res.status(500).json({ message: 'JWT_SECRET is not defined' });
             return;
         }
-        const token = jwt.sign({ id: user._id, email: user.email }, jwtSecret, {
-            expiresIn: jwtExpiresIn,
-        });
+        const token = buildAuthToken(String(user._id), user.role, user.email, jwtSecret);
         res.status(201).json({
             message: 'User registered successfully',
             token,
@@ -79,7 +88,8 @@ router.post('/register', validate(registerValidator), async (req, res, next) => 
 router.post('/login', validate(loginValidator), async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        const normalizedEmail = email.trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
         if (!user) {
             res.status(401).json({ message: 'Invalid credentials' });
             return;
@@ -94,9 +104,7 @@ router.post('/login', validate(loginValidator), async (req, res, next) => {
             res.status(500).json({ message: 'JWT_SECRET is not defined' });
             return;
         }
-        const token = jwt.sign({ id: user._id, email: user.email }, jwtSecret, {
-            expiresIn: jwtExpiresIn,
-        });
+        const token = buildAuthToken(String(user._id), user.role, user.email, jwtSecret);
         res.status(200).json({
             message: 'Login successful',
             token,

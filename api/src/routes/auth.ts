@@ -8,6 +8,20 @@ const router = Router()
 
 const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '1d') as SignOptions['expiresIn']
 
+const buildAuthToken = (userId: string, role: (typeof USER_ROLES)[number], email: string, secret: string): string => {
+  return jwt.sign(
+    {
+      id: userId,
+      role,
+      email,
+    },
+    secret,
+    {
+      expiresIn: jwtExpiresIn,
+    },
+  )
+}
+
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null
 }
@@ -65,16 +79,19 @@ router.post('/register', validate(registerValidator), async (req, res, next) => 
       role?: (typeof USER_ROLES)[number]
     }
 
-    const existingUser = await User.findOne({ email })
+    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedName = name.trim()
+
+    const existingUser = await User.findOne({ email: normalizedEmail })
 
     if (existingUser) {
-      res.status(409).json({ message: 'User already exists' })
+      res.status(409).json({ message: 'Email is already in use' })
       return
     }
 
     const user = await User.create({
-      name,
-      email,
+      name: normalizedName,
+      email: normalizedEmail,
       password,
       role,
     })
@@ -86,9 +103,7 @@ router.post('/register', validate(registerValidator), async (req, res, next) => 
       return
     }
 
-    const token = jwt.sign({ id: user._id, email: user.email }, jwtSecret, {
-      expiresIn: jwtExpiresIn,
-    })
+    const token = buildAuthToken(String(user._id), user.role, user.email, jwtSecret)
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -112,7 +127,9 @@ router.post('/login', validate(loginValidator), async (req, res, next) => {
       password: string
     }
 
-    const user = await User.findOne({ email })
+    const normalizedEmail = email.trim().toLowerCase()
+
+    const user = await User.findOne({ email: normalizedEmail })
 
     if (!user) {
       res.status(401).json({ message: 'Invalid credentials' })
@@ -133,9 +150,7 @@ router.post('/login', validate(loginValidator), async (req, res, next) => {
       return
     }
 
-    const token = jwt.sign({ id: user._id, email: user.email }, jwtSecret, {
-      expiresIn: jwtExpiresIn,
-    })
+    const token = buildAuthToken(String(user._id), user.role, user.email, jwtSecret)
 
     res.status(200).json({
       message: 'Login successful',
