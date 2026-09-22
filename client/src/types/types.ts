@@ -1,8 +1,29 @@
 export type User = {
-    _id:string
+    _id: string
     name: string
     email: string
     role: string
+}
+
+export type Task = {
+  _id: string
+  title: string
+  project: Project
+  description: string
+  status: string
+  priority: string
+  dueDate: string
+  assignee?: string | User | null
+}
+
+export type Project = {
+  _id: string
+  title: string
+  description: string
+  status: string
+  priority: string
+  tasks?: Task[] | null
+  assignee?: string | User | null
 }
 
 export type AuthContextValue = {
