@@ -25,10 +25,6 @@ function TaskDetail() {
         fetchTask()
     }, [id])
 
-    const getProjectLabel = (project: Task['project']) => {
-        if (typeof project === 'string') return project
-        return project?.title || 'Unknown Project'
-    }
 
     const handleStatusUpdate = async () => {
         if (!task) return
@@ -71,7 +67,6 @@ function TaskDetail() {
 
             <div className="detail-card">
                 <div className="detail-grid">
-                    <div className="detail-item"><strong>Project</strong>{getProjectLabel(task.project)}</div>
                     <div className="detail-item"><strong>Due Date</strong>{new Date(task.dueDate).toLocaleDateString()}</div>
                     <div className="detail-item"><strong>Priority</strong>{task.priority}</div>
                     <div className="detail-item"><strong>Status</strong>{task.status}</div>
@@ -94,8 +89,8 @@ function TaskDetail() {
             </div>
 
             <div className="detail-card">
-                <h2>Description</h2>
-                <p>{task.description}</p>
+                <h2>Details</h2>
+                <p>{task.details}</p>
             </div>
 
             <div className="detail-actions">

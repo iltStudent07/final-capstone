@@ -5,15 +5,24 @@ export type User = {
     role: string
 }
 
+interface ChecklistItem {
+  label: string
+  done: boolean
+}
+
 export type Task = {
-  _id: string
-  title: string
-  project: Project
-  description: string
-  status: string
-  priority: string
-  dueDate: string
-  assignee?: string | User | null
+    _id: string
+    resource: string
+    assignee: string | User | null
+    title: string
+    details: string
+    estimatedHours: number
+    priority: string
+    status: string
+    checklist: ChecklistItem[]
+    dueDate?: string
+    attachments: string[]
+  
 }
 
 export type Project = {
@@ -24,6 +33,30 @@ export type Project = {
   priority: string
   tasks?: Task[] | null
   assignee?: string | User | null
+}
+
+export type sprintWindow = {
+    startDate: Date
+    endDate: Date
+}
+
+export type progressEntry = {
+    label: string
+    percentComplete: number
+    recordedAt: Date
+}
+
+export type Resource = {
+    title: string
+    description: string
+    budget: string
+    status: string
+    tags: string[]
+    owner: User
+    collaborators: User[]
+    sprintWindow: sprintWindow
+    progressEntry: progressEntry[]
+
 }
 
 export type RecentTasks = {
@@ -38,22 +71,30 @@ export type RecentTasks = {
 }
 
 export type DashboardStats = {
-    totalTasks: number
-    tasksByStatus:
-        | {
-            review: number
-            inprogress: number
-            todo: number
-            done: number
+    totals: {
+        totalUsers: number
+        totalResources: number
+        tasks: number
+    }
+
+    grouped: {
+        usersByRole: number
+        resoucesByStatus: number
+        tasksByStatus: number
+        tasksByPriority: number
+    }
+    
+    recent: {
+            users: User[]
+            resources: Resource[]
+            tasks: RecentTasks[]
+    }
+
+    metrics: {
+            openResources: number
+            overdueTasks: number
+            averageResourceBudget: number
         }
-        | {
-            status: string
-            count: number
-        }[]
-    totalPolicies: number
-    totalUsers: number
-    recentTasks: RecentTasks[]
-    totalClaimAmount: number
 }
 
 export type AuthContextValue = {
