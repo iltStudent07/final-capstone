@@ -26,6 +26,36 @@ export type Project = {
   assignee?: string | User | null
 }
 
+export type RecentTasks = {
+    _id: string
+    title: string
+    project: {
+        _id: string
+        title: string
+    }
+    status: string
+    dueDate: string
+}
+
+export type DashboardStats = {
+    totalTasks: number
+    tasksByStatus:
+        | {
+            review: number
+            inprogress: number
+            todo: number
+            done: number
+        }
+        | {
+            status: string
+            count: number
+        }[]
+    totalPolicies: number
+    totalUsers: number
+    recentTasks: RecentTasks[]
+    totalClaimAmount: number
+}
+
 export type AuthContextValue = {
   user: User | null;
   token: string | null;
