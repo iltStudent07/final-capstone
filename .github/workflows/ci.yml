@@ -54,6 +54,7 @@ jobs:
 
       - name: Install API dependencies
         if: ${{ steps.api-project.outputs.exists == 'true' }}
+        shell: bash
         working-directory: api
         run: |
           if [ -f package-lock.json ]; then
@@ -125,6 +126,7 @@ jobs:
 
       - name: Install client dependencies
         if: ${{ steps.client-project.outputs.exists == 'true' }}
+        shell: bash
         working-directory: client
         run: |
           if [ -f package-lock.json ]; then
