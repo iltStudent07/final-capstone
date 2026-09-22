@@ -170,7 +170,7 @@ function Projects() {
   }
 
   return (
-    <div className="project-page">
+    <div className="page-shell project-page">
       <div className="page-header">
         <h1 className="page-header__title">Projects</h1>
         <button
@@ -182,13 +182,13 @@ function Projects() {
       </div>
 
       {showForm && (
-        <div className="section-panel section-panel--padded form-card">
+        <div className="panel form-card">
           <h2>Create New Project</h2>
           <form onSubmit={handleSubmitProject}>
-            <div className="form-grid form-grid--two">
-              <div>
+            <div className="form-grid">
+              <div className="form-group">
                 <label className="form-label">
-                  Title <span className="form-required">*</span>
+                  Title <span>*</span>
                 </label>
                 <input
                   type="text"
@@ -199,7 +199,7 @@ function Projects() {
                 />
               </div>
 
-              <div>
+              <div className="form-group">
                 <label className="form-label">Assignee</label>
                 <input
                   type="text"
@@ -210,9 +210,9 @@ function Projects() {
                 />
               </div>
 
-              <div>
+              <div className="form-group form-group--full">
                 <label className="form-label">
-                  Description <span className="form-required">*</span>
+                  Description <span>*</span>
                 </label>
                 <input
                   type="text"
@@ -223,7 +223,7 @@ function Projects() {
                 />
               </div>
 
-              <div>
+              <div className="form-group">
                 <label className="form-label">Status</label>
                 <select
                   value={formData.status}
@@ -237,7 +237,7 @@ function Projects() {
                 </select>
               </div>
 
-              <div>
+              <div className="form-group">
                 <label className="form-label">Priority</label>
                 <select
                   value={formData.priority}
@@ -247,6 +247,7 @@ function Projects() {
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
+                  <option value="critical">Critical</option>
                 </select>
               </div>
             </div>
@@ -264,7 +265,7 @@ function Projects() {
         </div>
       )}
 
-      <div className="filter-row">
+      <div className="filter-row panel panel--soft">
         <div className="filter-group">
           <label className="form-label">Search</label>
           <input
@@ -292,14 +293,14 @@ function Projects() {
         </div>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p>{error}</p>}
 
       {loading ? (
-        <p>Loading projects...</p>
+        <p className="page-message">Loading projects...</p>
       ) : (
         <>
-          <div className="table-wrap">
-            <table className="app-table projects-table">
+          <div className="table-wrap panel">
+            <table className="app-table">
               <thead>
                 <tr>
                   <th>Title</th>
@@ -316,7 +317,7 @@ function Projects() {
                   projects.map((project) => (
                     <tr key={project._id}>
                       <td>
-                        <Link className="project-link" to={`/projects/${project._id}`}>
+                        <Link className="table-link" to={`/projects/${project._id}`}>
                           {project.title}
                         </Link>
                       </td>
@@ -332,7 +333,7 @@ function Projects() {
                       <td>
                         <button
                           onClick={() => void handleDelete(project._id)}
-                          className="app-button project-button--danger"
+                          className="app-button app-button--danger"
                         >
                           Delete
                         </button>
@@ -341,7 +342,7 @@ function Projects() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="pagination-info">
+                    <td colSpan={7}>
                       No projects found.
                     </td>
                   </tr>
@@ -350,7 +351,7 @@ function Projects() {
             </table>
           </div>
 
-          <div className="pagination-bar">
+          <div className="pagination-bar panel panel--soft">
             <div className="pagination-info">
               Showing {projects.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{' '}
               {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} projects
@@ -360,13 +361,13 @@ function Projects() {
               <button
                 onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
                 disabled={pagination.page === 1}
-                className="app-button pagination-button"
+                className="app-button"
               >
                 Previous
               </button>
 
               <div className="pagination-controls__page">
-                <span className="pagination-info">
+                <span>
                   Page {pagination.page} of {pagination.totalPages || 1}
                 </span>
               </div>
@@ -374,7 +375,7 @@ function Projects() {
               <button
                 onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
                 disabled={pagination.page >= pagination.totalPages}
-                className="app-button pagination-button"
+                className="app-button"
               >
                 Next
               </button>

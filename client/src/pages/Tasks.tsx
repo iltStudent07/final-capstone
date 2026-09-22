@@ -1,40 +1,38 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../services/api'
 import type { Task, Project } from '../types/types'
-import { Link } from 'react-router-dom'
 
 interface PaginationData {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
+  page: number
+  limit: number
+  total: number
+  totalPages: number
 }
 
-function Tasks(){
-
-    const [tasks, setTasks] = useState<Task[]>([])
-    const [projects, setProjects] = useState<Project[]>([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [pagination, setPagination] = useState<PaginationData>({
+function Tasks() {
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
     total: 0,
     totalPages: 0,
   })
 
-    const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState({
     status: '',
     search: '',
   })
 
-  //For new task form
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     project: '',
     description: '',
-    status: '',
+    status: 'todo',
     priority: '',
     dueDate: '',
   })
@@ -42,7 +40,6 @@ function Tasks(){
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
 
-  // Fetch projects list for the form dropdown box
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -53,68 +50,63 @@ function Tasks(){
       }
     }
 
-    fetchProjects()
+    void fetchProjects()
   }, [])
 
-   // Fetch tasks when filters change
-  useEffect(() => {
-    void (async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const params = new URLSearchParams({
-          page: '1',
-          limit: '10',
-          ...(filters.status && { status: filters.status }),
-          ...(filters.search && { search: filters.search }),
-        })
+  const fetchTasks = async (page = 1) => {
+    setLoading(true)
+    setError(null)
 
-        const response = await api.get(`/tasks?${params}`)
-        console.log('Tasks response:', response.data)
-        
-        // Handle case where response.data is the tasks array directly
-        const tasksData = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data?.data || [])
-        
-        const paginationData = response.data?.pagination || {
-          page: 1,
-          limit: 10,
-          total: Array.isArray(response.data) ? response.data.length : 0,
-          totalPages: 1,
-        }
-        
-        console.log('Processed tasks:', tasksData)
-        console.log('Pagination:', paginationData)
-        
-        setTasks(tasksData)
-        setPagination(paginationData)
-      } catch (err) {
-        setError('Failed to load tasks')
-        console.error('Error loading tasks:', err)
-      } finally {
-        setLoading(false)
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: '10',
+        ...(filters.status && { status: filters.status }),
+        ...(filters.search && { search: filters.search }),
+      })
+
+      const response = await api.get(`/tasks?${params}`)
+      const tasksData = Array.isArray(response.data)
+        ? response.data
+        : (response.data?.data || [])
+      const paginationData = response.data?.pagination || {
+        page,
+        limit: 10,
+        total: Array.isArray(response.data) ? response.data.length : tasksData.length,
+        totalPages: 1,
       }
-    })()
+
+      setTasks(tasksData)
+      setPagination(paginationData)
+    } catch (err) {
+      setError('Failed to load tasks')
+      console.error('Error loading tasks:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchTasks(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
 
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: 'status' | 'search', value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
-    // sets form data when there is a change in value
-    const handleFormChange = (key: string, value: string) => {
+  const handleFormChange = (key: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
-  // Handles submiting form data to the task post api route
-  const handleSubmitTask = async (e: React.SubmitEvent) => {
+  const handleSubmitTask = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFormError(null)
     setFormLoading(true)
 
     try {
-      if (!formData.title || !formData.project || !formData.description || !formData.priority ||!formData.dueDate) {
+      if (!formData.title || !formData.project || !formData.description || !formData.priority || !formData.dueDate) {
         setFormError('Title, project, description, priority and due date are required')
         setFormLoading(false)
         return
@@ -126,7 +118,7 @@ function Tasks(){
         description: formData.description,
         status: formData.status,
         priority: formData.priority,
-        dueDate: formData.dueDate
+        dueDate: formData.dueDate,
       }
 
       await api.post('/tasks', payload)
@@ -135,40 +127,13 @@ function Tasks(){
         title: '',
         project: '',
         description: '',
-        status: '',
+        status: 'todo',
         priority: '',
         dueDate: '',
       })
       setShowForm(false)
 
-
-      setLoading(true)
-      setError(null)
-      try {
-        const params = new URLSearchParams({
-          page: '1',
-          limit: '10',
-          ...(filters.status && { status: filters.status }),
-          ...(filters.search && { search: filters.search }),
-        })
-
-        const response = await api.get(`/tasks?${params}`)
-        const tasksData = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data?.data || [])
-        const paginationData = response.data?.pagination || {
-          page: 1,
-          limit: 10,
-          total: Array.isArray(response.data) ? response.data.length : 0,
-          totalPages: 1,
-        }
-        setTasks(tasksData)
-        setPagination(paginationData)
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+      await fetchTasks(1)
     } catch (err) {
       setFormError('Failed to create task')
       console.error(err)
@@ -185,80 +150,119 @@ function Tasks(){
     }
   }
 
-    return(
+  const getProjectTitle = (project: Task['project']) => {
+    if (typeof project === 'string') return project
+    return project?.title || '—'
+  }
+
+  return (
+    <div className="page-shell task-page">
+      <div className="page-header">
         <div>
-            <div>
-                <h1>Tasks</h1>
-                <button onClick={() => setShowForm(!showForm)}>{showForm ? 'Cancel' : 'New Task'}</button>
+          <h1 className="page-header__title">Tasks</h1>
+        </div>
+        <button className="app-button app-button--primary" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : 'New Task'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="panel form-card">
+          <h2>Create New Task</h2>
+          <form onSubmit={handleSubmitTask}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Title <span className="form-required">*</span></label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => handleFormChange('title', e.target.value)}
+                  placeholder="Task title"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Project <span className="form-required">*</span></label>
+                <select
+                  className="form-control"
+                  value={formData.project}
+                  onChange={(e) => handleFormChange('project', e.target.value)}
+                >
+                  <option value="">Select a project</option>
+                  {projects.map((project) => (
+                    <option key={project._id} value={project._id}>{project.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group form-group--full">
+                <label className="form-label">Description <span className="form-required">*</span></label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={formData.description}
+                  onChange={(e) => handleFormChange('description', e.target.value)}
+                  placeholder="Description of task"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select
+                  className="form-control"
+                  value={formData.status}
+                  onChange={(e) => handleFormChange('status', e.target.value)}
+                >
+                  <option value="todo">Todo</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="review">Review</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Priority <span className="form-required">*</span></label>
+                <select
+                  className="form-control"
+                  value={formData.priority}
+                  onChange={(e) => handleFormChange('priority', e.target.value)}
+                >
+                  <option value="">Select priority</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Due Date <span className="form-required">*</span></label>
+                <input
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => handleFormChange('dueDate', e.target.value)}
+                  className="form-control"
+                />
+              </div>
             </div>
 
-            {showForm && (
-                <div>
-                    <h2>Create New Task</h2>
-                    <form onSubmit={handleSubmitTask}>
-                        <div>
-                            <div>
-                                <label>Title</label>
-                                <input type="title" value={formData.title}/>
+            {formError && <p className="form-error">{formError}</p>}
 
-                                <label>Project <span>*</span></label>
-                                <select value={formData.project} onChange={(e) => handleFormChange('project', e.target.value)}>
-                                    <option value="">Select a project</option>
-                                        {projects.map((project) => (
-                                    <option key={project._id} value={project._id}>{project.title}</option> ))}
-                                </select>  
-                            </div>
-                            <div>
-                                <label className="form-label">
-                                    Priority
-                                </label>
-                
-                            </div>
+            <button
+              type="submit"
+              disabled={formLoading}
+              className={`app-button ${formLoading ? 'button-disabled' : 'app-button--primary'}`}
+            >
+              {formLoading ? 'Creating...' : 'Create Task'}
+            </button>
+          </form>
+        </div>
+      )}
 
-                            <div>
-                                <label className="form-label">
-                                    Incident Date <span className="form-required">*</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.dueDate}
-                                    onChange={(e) => handleFormChange('dueDate', e.target.value)}
-                                    className="form-control"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="form-label">
-                                    Description <span className="form-required">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.description}
-                                    onChange={(e) => handleFormChange('description', e.target.value)}
-                                    placeholder="Description of Task"
-                                />
-                            </div>
-                        </div>
-
-                        {formError && (
-                            <p className="form-error">{formError}</p>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={formLoading}
-                            className={`app-button ${formLoading ? 'button-disabled' : 'app-button--primary'}`}
-                        >
-                            {formLoading ? 'Creating...' : 'Create Task'}
-                        </button>
-                    </form>
-                </div>
-            )}
-            <div className="filter-row">
+      <div className="filter-row panel panel--soft">
         <div className="filter-group">
-          <label className="form-label">
-            Search
-          </label>
+          <label className="form-label">Search</label>
           <input
             type="text"
             value={filters.search}
@@ -269,29 +273,29 @@ function Tasks(){
         </div>
 
         <div className="filter-group filter-group--narrow">
-          <label className="form-label">
-            Status Filter
-          </label>
+          <label className="form-label">Status Filter</label>
           <select
+            className="form-control"
             value={filters.status}
-            onChange={(e) => handleFilterChange('status', e.target.value)}>
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+          >
             <option value="">All Statuses</option>
             <option value="todo">Todo</option>
-            <option value="in-progress">In-Progress</option>
+            <option value="in-progress">In Progress</option>
             <option value="review">Review</option>
-            <option value="done">Done</option>    
+            <option value="done">Done</option>
           </select>
         </div>
       </div>
 
-      {error && <p>{error}</p>}
+      {error && <p className="page-message page-message--error">{error}</p>}
 
       {loading ? (
-        <p>Loading tasks...</p>
+        <p className="page-message">Loading tasks...</p>
       ) : (
         <>
-          <div>
-            <table>
+          <div className="table-wrap panel">
+            <table className="app-table">
               <thead>
                 <tr>
                   <th>Title</th>
@@ -306,18 +310,15 @@ function Tasks(){
                 {tasks.length > 0 ? (
                   tasks.map((task) => (
                     <tr key={task._id}>
-                      <td><Link to={`/tasks/${task._id}`}>{task.title}</Link></td>
-                      <td>
-                        {typeof task.project === 'string'
-                          ? task.project
-                          : ((task.project as Record<string, unknown>)?.policyNumber as string) || '—'}
-                      </td>
+                      <td><Link className="table-link" to={`/tasks/${task._id}`}>{task.title}</Link></td>
+                      <td>{getProjectTitle(task.project)}</td>
                       <td>{task.description}</td>
                       <td>
-                        <span className={`status-pill tasks-status-pill task-status--${task.status}`}>
+                        <span className={`status-pill task-status--${task.status}`}>
                           {task.status}
                         </span>
                       </td>
+                      <td>{task.priority || '—'}</td>
                       <td>{formatDate(task.dueDate)}</td>
                     </tr>
                   ))
@@ -331,85 +332,33 @@ function Tasks(){
               </tbody>
             </table>
           </div>
-          <div>
-            <div>
+
+          <div className="pagination-bar panel panel--soft">
+            <div className="pagination-info">
               Showing {tasks.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{' '}
               {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} tasks
             </div>
 
-            <div>
+            <div className="pagination-controls">
               <button
-                onClick={async () => {
-                  const newPage = pagination.page - 1
-                  setLoading(true)
-                  try {
-                    const params = new URLSearchParams({
-                      page: String(newPage),
-                      limit: '10',
-                      ...(filters.status && { status: filters.status }),
-                      ...(filters.search && { search: filters.search }),
-                    })
-                    const response = await api.get(`/tasks?${params}`)
-                    const tasksData = Array.isArray(response.data) 
-                      ? response.data 
-                      : (response.data?.data || [])
-                    const paginationData = response.data?.pagination || {
-                      page: 1,
-                      limit: 10,
-                      total: Array.isArray(response.data) ? response.data.length : 0,
-                      totalPages: 1,
-                    }
-                    setTasks(tasksData)
-                    setPagination(paginationData)
-                  } catch (err) {
-                    setError('Failed to load tasks')
-                    console.error(err)
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
+                onClick={() => void fetchTasks(pagination.page - 1)}
                 disabled={pagination.page === 1}
+                className="app-button"
               >
                 Previous
               </button>
 
-              <div>
+              <div className="pagination-controls__page">
                 <span>
-                  Page {pagination.page} of {pagination.totalPages}
+                  Page {pagination.page} of {pagination.totalPages || 1}
                 </span>
               </div>
 
               <button
-                onClick={async () => {
-                  const newPage = pagination.page + 1
-                  setLoading(true)
-                  try {
-                    const params = new URLSearchParams({
-                      page: String(newPage),
-                      limit: '10',
-                      ...(filters.status && { status: filters.status }),
-                      ...(filters.search && { search: filters.search }),
-                    })
-                    const response = await api.get(`/tasks?${params}`)
-                    const tasksData = Array.isArray(response.data) 
-                      ? response.data 
-                      : (response.data?.data || [])
-                    const paginationData = response.data?.pagination || {
-                      page: 1,
-                      limit: 10,
-                      total: Array.isArray(response.data) ? response.data.length : 0,
-                      totalPages: 1,
-                    }
-                    setTasks(tasksData)
-                    setPagination(paginationData)
-                  } catch (err) {
-                    setError('Failed to load tasks')
-                    console.error(err)
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-                disabled={pagination.page >= pagination.totalPages}>
+                onClick={() => void fetchTasks(pagination.page + 1)}
+                disabled={pagination.page >= pagination.totalPages}
+                className="app-button"
+              >
                 Next
               </button>
             </div>
@@ -417,7 +366,7 @@ function Tasks(){
         </>
       )}
     </div>
-    )
+  )
 }
 
 export default Tasks

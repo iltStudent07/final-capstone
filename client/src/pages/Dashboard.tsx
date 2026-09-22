@@ -24,8 +24,16 @@ function Dashboard() {
     fetchDashboard()
   }, [])
 
-  if (loading) return <p>Loading dashboard...</p>
-  if (error) return <p>{error}</p>
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString('en-US')
+    } catch {
+      return dateStr
+    }
+  }
+
+  if (loading) return <p className="page-message">Loading dashboard...</p>
+  if (error) return <p className="page-message page-message--error">{error}</p>
 
   const defaultTasksByStatus = {
     review: 0,
@@ -74,44 +82,66 @@ function Dashboard() {
   ]
   const recentTasks = data?.recentTasks ?? []
   const totalTasks = data?.totalTasks ?? 0
+  const totalProjects = data?.totalPolicies ?? 0
+  const totalUsers = data?.totalUsers ?? 0
+  const recentOverdueTasks = recentTasks.filter((task) => new Date(task.dueDate) < new Date()).length
 
     return (
-        <div>
-            <h1>Dashboard</h1>
-            <div>
-                <div>Total Projects: <strong>Placeholder</strong></div>
-                <div>Total Tasks: <strong>Placeholder</strong></div>
-                <div>Total Users: <strong>Placeholder</strong></div>
-                <div>Past Due Tasks: <strong>Placeholder</strong></div>
+        <div className="page-shell dashboard-page">
+            <div className="page-header">
+              <div>
+                <h1 className="page-header__title">Dashboard</h1>
+              </div>
             </div>
-            <div>
+
+            <div className="stats-grid">
+                <div className="stat-card">
+                  <span className="stat-card__label">Total Projects</span>
+                  <strong className="stat-card__value">{totalProjects}</strong>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-card__label">Total Tasks</span>
+                  <strong className="stat-card__value">{totalTasks}</strong>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-card__label">Total Users</span>
+                  <strong className="stat-card__value">{totalUsers}</strong>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-card__label">Recent Overdue Tasks</span>
+                  <strong className="stat-card__value">{recentOverdueTasks}</strong>
+                </div>
+            </div>
+
+            <div className="dashboard-grid">
         {/* Tasks by Status section */}
-        <div>
+        <section className="panel">
         <h2>Tasks by Status</h2>
 
         {tasksByStatus.map((item) => {
           const barWidth = totalTasks > 0 ? `${(item.count / totalTasks) * 100}%` : '0%'
 
           return (
-            <div key={item.status} className="dashboard-status-row">
-              <div className={`status-pill dashboard-status-pill dashboard-status--${item.statusKey}`}>{item.status}</div>
+            <div key={item.status} className="status-row">
+              <div className="status-row__label">{item.status}</div>
 
-              <div className={`dashboard-status-track dashboard-status-track--${item.statusKey}`}>
+              <div className="status-row__track">
                 <div
-                  className={`dashboard-status-fill dashboard-status-fill--${item.statusKey}`}
+                  className={`status-row__fill status-row__fill--${item.statusKey}`}
                   style={{ width: barWidth }}
                 />
               </div>
 
-              <div className="dashboard-status-count">{item.count}</div>
+              <div className="status-row__count">{item.count}</div>
             </div>
           )
         })}  
-        </div>
+        </section>
         {/* Recent Tasks section*/}
-        <div>
+        <section className="panel">
             <h2>Recent Tasks</h2>
-            <table>
+            <div className="table-wrap">
+            <table className="app-table">
               <thead>
                 <tr>
                   <th>Task</th>
@@ -124,10 +154,14 @@ function Dashboard() {
                 {recentTasks.length > 0 ? (
                   recentTasks.map((task) => (
                     <tr key={task._id}>
-                      <td><Link className="claim-link" to={`/claims/${task._id}`}>{task.title}</Link></td>
+                      <td><Link className="table-link" to={`/tasks/${task._id}`}>{task.title}</Link></td>
                       <td>{task.project?.title ?? '—'}</td>
-
-                      <td>{task.status}</td>
+                      <td>
+                        <span className={`status-pill task-status--${task.status.toLowerCase().replace(/[^a-z0-9-]/g, '')}`}>
+                          {task.status}
+                        </span>
+                      </td>
+                      <td>{formatDate(task.dueDate)}</td>
                     </tr>
                   ))
                 ) : (
@@ -137,7 +171,8 @@ function Dashboard() {
                 )}
               </tbody>
             </table>
-        </div>
+            </div>
+        </section>
       </div>
     </div>
   )
