@@ -133,50 +133,90 @@ docker build -t final-capstone-api ./api
 docker build -t final-capstone-client ./client
 ```
 
-### Run with Docker Compose
+### Run with Docker Compose (Recommended)
 
-Create a `docker-compose.yml` in the project root:
+The `docker-compose.yml` in the project root sets up all services for local development:
+
+**Start all services:**
+```bash
+docker compose up --build
+```
+
+**Access the app:**
+- Landing page: http://localhost:3000
+- React app: http://localhost:3000/app
+- API health check: http://localhost:4000/health
+
+**Stop all services:**
+```bash
+docker compose down
+```
+
+**View logs:**
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f api
+docker compose logs -f client
+docker compose logs -f mongo
+```
+
+#### Port Conflicts
+
+If you get an error like `failed to bind host port 0.0.0.0:27017/tcp: address already in use`, another process is using that port.
+
+**Option 1: Stop the conflicting service (Linux/macOS)**
+```bash
+# Stop local MongoDB
+sudo systemctl stop mongod
+# or
+brew services stop mongodb-community
+
+# Windows PowerShell (admin)
+Stop-Service MongoDB
+```
+
+**Option 2: Use different host ports in docker-compose.yml**
+
+Edit `docker-compose.yml` and change the port mapping (format: `host:container`):
 
 ```yaml
-version: '3.9'
-
 services:
-  api:
-    build: ./api
+  mongo:
     ports:
-      - "4000:4000"
-    environment:
-      - MONGODB_URI=mongodb://mongo:27017/capstone
-      - JWT_SECRET=your_jwt_secret
-    depends_on:
-      - mongo
+      - "27018:27017"   # Use port 27018 instead of 27017
+
+  api:
+    ports:
+      - "4001:4000"     # Use port 4001 instead of 4000
 
   client:
-    build: ./client
     ports:
-      - "80:80"
-    depends_on:
-      - api
-
-  mongo:
-    image: mongo:7
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-volumes:
-  mongo-data:
+      - "3001:80"       # Use port 3001 instead of 3000
 ```
 
+**Find what's using a port:**
 ```bash
-# Start services
-docker-compose up
+# Linux/macOS
+lsof -i :27017
+lsof -i :3000
 
-# App will be available at http://localhost
-# - Landing page: http://localhost/
-# - React app: http://localhost/app/
+# Windows PowerShell
+Get-NetTCPConnection -LocalPort 27017
 ```
+
+### Manual Docker Compose Example
+
+See `docker-compose.yml` for the full configuration. Key features:
+
+- **mongo**: MongoDB 7 with persistent volume
+- **api**: Built from `./api`, runs in dev mode with hot reload
+- **client**: Built from `./client`, serves via Nginx at port 3000
+- **Health checks**: API waits for MongoDB to be healthy before starting
+
+
 
 ## Environment Variables
 

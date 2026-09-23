@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: capstone-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  api:
+    build: ./api
+    container_name: capstone-api
+    ports:
+      - "4000:4000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/capstone
+      - JWT_SECRET=dev-secret-change-in-production
+      - PORT=4000
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./api/src:/app/src
+    command: npm run dev
+
+  client:
+    build: ./client
+    container_name: capstone-client
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  mongo-data:
