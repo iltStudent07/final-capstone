@@ -19,6 +19,11 @@ const landingPagePlugin = {
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/app/' : '/',
   plugins: [react(), landingPagePlugin],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/tests/setup.ts',
+  },
   server: {
     proxy: {
       '/api': {
