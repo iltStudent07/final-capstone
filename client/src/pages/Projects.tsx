@@ -37,6 +37,8 @@ function Projects() {
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
 
+  const [assigneeOptions, setAssigneeOptions] = useState<Array<{ _id: string; name: string; email: string }>>([])
+
   const fetchProjects = useCallback(async (page: number) => {
     setLoading(true)
     setError(null)
@@ -70,6 +72,22 @@ function Projects() {
     }
   }, [filters.status, filters.search])
 
+  const fetchAssigneeOptions = useCallback(async () => {
+    try {
+      const response = await api.get('/users')
+      const users = Array.isArray(response.data) ? response.data : []
+      setAssigneeOptions(users)
+    } catch (err) {
+      console.error('Failed to load users for assignee dropdown:', err)
+      setAssigneeOptions([])
+    }
+  }, [])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchAssigneeOptions()
+  }, [fetchAssigneeOptions])
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchProjects(pagination.page)
@@ -84,6 +102,8 @@ function Projects() {
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
+  const isValidObjectId = (value: string) => /^[0-9a-fA-F]{24}$/.test(value.trim())
+
   const handleSubmitProject = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFormError(null)
@@ -96,12 +116,18 @@ function Projects() {
         return
       }
 
+      if (formData.assignee && !isValidObjectId(formData.assignee)) {
+        setFormError('Assignee must be a valid User ID or leave it blank')
+        setFormLoading(false)
+        return
+      }
+
       const payload = {
         title: formData.title,
         description: formData.description,
         status: formData.status,
         priority: formData.priority,
-        ...(formData.assignee && { assignee: formData.assignee }),
+        ...(formData.assignee && isValidObjectId(formData.assignee) && { assignee: formData.assignee }),
       }
 
       await api.post('/projects', payload)
@@ -201,13 +227,18 @@ function Projects() {
 
               <div className="form-group">
                 <label className="form-label">Assignee</label>
-                <input
-                  type="text"
+                <select
                   value={formData.assignee}
                   onChange={(e) => handleFormChange('assignee', e.target.value)}
-                  placeholder="Assigned team member"
                   className="form-control"
-                />
+                >
+                  <option value="">Select a team member</option>
+                  {assigneeOptions.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group form-group--full">

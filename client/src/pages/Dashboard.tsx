@@ -35,55 +35,11 @@ function Dashboard() {
   if (loading) return <p className="page-message">Loading dashboard...</p>
   if (error) return <p className="page-message page-message--error">{error}</p>
 
-  const defaultTasksByStatus = {
-    review: 0,
-    inprogress: 0,
-    todo: 0,
-    done: 0,
-  }
-
-  const tasksByStatusCounts = Array.isArray(data?.tasksByStatus)
-    ? data.tasksByStatus.reduce(
-        (acc, item) => {
-          const status = item.status.toLowerCase().replace(/[^a-z0-9]/g, '')
-
-          if (status === 'review') acc.review += item.count
-          if (status === 'inprogress') acc.inprogress += item.count
-          if (status === 'todo') acc.todo += item.count
-          if (status === 'done') acc.done += item.count
-
-          return acc
-        },
-        { ...defaultTasksByStatus },
-      )
-    : { ...defaultTasksByStatus, ...(data?.tasksByStatus ?? {}) }
-
-  const tasksByStatus = [
-    {
-      status: 'Review',
-      statusKey: 'review',
-      count: tasksByStatusCounts.review,
-    },
-    {
-      status: 'In-Progress',
-      statusKey: 'inprogress',
-      count: tasksByStatusCounts.inprogress,
-    },
-    {
-      status: 'Todo',
-      statusKey: 'todo',
-      count: tasksByStatusCounts.todo,
-    },
-    {
-      status: 'Done',
-      statusKey: 'done',
-      count: tasksByStatusCounts.done,
-    },
-  ]
-  const recentTasks = data?.recentTasks ?? []
-  const totalTasks = data?.totalTasks ?? 0
-  const totalProjects = data?.totalPolicies ?? 0
-  const totalUsers = data?.totalUsers ?? 0
+  const totalTasks = data?.totals?.tasks ?? 0
+  const totalResources = data?.totals?.resources ?? 0
+  const totalUsers = data?.totals?.users ?? 0
+  const recentTasks = data?.recent?.tasks ?? []
+  const tasksByStatus = data?.grouped?.tasksByStatus ?? []
   const recentOverdueTasks = recentTasks.filter((task) => new Date(task.dueDate) < new Date()).length
 
     return (
@@ -96,8 +52,8 @@ function Dashboard() {
 
             <div className="stats-grid">
                 <div className="stat-card">
-                  <span className="stat-card__label">Total Projects</span>
-                  <strong className="stat-card__value">{totalProjects}</strong>
+                  <span className="stat-card__label">Total Resources</span>
+                  <strong className="stat-card__value">{totalResources}</strong>
                 </div>
                 <div className="stat-card">
                   <span className="stat-card__label">Total Tasks</span>

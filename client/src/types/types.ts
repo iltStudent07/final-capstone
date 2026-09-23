@@ -73,12 +73,38 @@ export type RecentTasks = {
   dueDate: string
 }
 
+export type DashboardTask = {
+  _id: string
+  title: string
+  status: string
+  dueDate: string
+  project?: {
+    _id?: string
+    title?: string
+  }
+}
+
 export type DashboardStats = {
-  totalTasks: number
-  totalPolicies: number
-  totalUsers: number
-  recentTasks: RecentTasks[]
-  tasksByStatus?: Array<{ status: string; count: number }> | Record<string, number>
+  totals: {
+    tasks: number
+    resources: number
+    users: number
+  }
+  tasksByStatus: Array<{
+    status: string
+    count: number
+    statusKey: string
+  }>
+  grouped: {
+    tasksByStatus: Array<{
+      status: string
+      count: number
+      statusKey: string
+    }>
+  }
+  recent: {
+    tasks: DashboardTask[]
+  }
 }
 
 export type AuthContextValue = {

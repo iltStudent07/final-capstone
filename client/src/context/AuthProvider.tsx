@@ -16,7 +16,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!storedUser) return null
 
     try {
-      return JSON.parse(storedUser) as User
+      const parsedUser = JSON.parse(storedUser) as { _id?: string; id?: string; [key: string]: unknown }
+      return {
+        ...parsedUser,
+        _id: parsedUser._id ?? parsedUser.id ?? '',
+        role: String(parsedUser.role ?? 'member'),
+      } as User
     } catch {
       localStorage.removeItem('user')
       return null
@@ -25,11 +30,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [loading] = useState(false)
 
-  const persistAuth = (newToken: string, newUser: User) => {
+  const persistAuth = (newToken: string, newUser: { _id?: string; id?: string; [key: string]: unknown }) => {
+    const normalizedUser: User = {
+      ...newUser,
+      _id: newUser._id ?? newUser.id ?? '',
+      name: String(newUser.name ?? ''),
+      email: String(newUser.email ?? ''),
+      role: String(newUser.role ?? 'member'),
+    }
+
     localStorage.setItem('token', newToken)
-    localStorage.setItem('user', JSON.stringify(newUser))
+    localStorage.setItem('user', JSON.stringify(normalizedUser))
     setToken(newToken)
-    setUser(newUser)
+    setUser(normalizedUser)
   }
 
   const login = async (email: string, password: string) => {
@@ -53,21 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
-    console.log('logout called before clear', {
-      token: localStorage.getItem('token'),
-      user: localStorage.getItem('user'),
-    })
-
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setToken(null)
     setUser(null)
-
-    console.log('logout called after clear', {
-      token: localStorage.getItem('token'),
-      user: localStorage.getItem('user'),
-    })
-
     navigate('/login', { replace: true })
   }
 
