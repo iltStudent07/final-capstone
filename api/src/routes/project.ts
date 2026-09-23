@@ -16,7 +16,7 @@ const projectBodyValidator = (body: unknown): string[] => {
     return ['Request body is required']
   }
 
-  if (typeof body.title !== 'string' || body.title.trim().length < 2) {
+  if (typeof body.title !== 'undefined' && (typeof body.title !== 'string' || body.title.trim().length < 2)) {
     errors.push('Project title must be at least 2 characters long')
   }
 

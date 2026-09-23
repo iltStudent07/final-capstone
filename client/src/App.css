@@ -635,18 +635,35 @@ main {
 
 @media (max-width: 560px) {
 	.navbar {
-		flex-direction: column;
+		flex-direction: row;
+		align-items: flex-start;
+		flex-wrap: wrap;
 	}
 
-	.navbar__links,
-	.navbar__logout {
+	.navbar-logo {
+		order: 1;
+	}
+
+	.navbar__meta {
+		order: 2;
+		width: auto;
+		margin-left: auto;
+		flex-direction: row;
+		align-items: center;
+		justify-content: flex-end;
+	}
+
+	.navbar__links {
+		order: 3;
 		width: 100%;
 	}
 
-	.nav-link,
+	.navbar__user {
+		text-align: left;
+	}
+
 	.navbar__logout {
-		width: 100%;
-		text-align: center;
+		width: auto;
 	}
 
 	.panel {
