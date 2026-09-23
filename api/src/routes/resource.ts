@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import Project from '../models/Project.js'
 import Resource from '../models/Resource.js'
 import { auth, type AuthenticatedRequest } from '../middleware/auth.js'
 
@@ -44,12 +45,29 @@ router.post('/', auth, async (req, res, next) => {
         ? String(authenticatedUser.id)
         : req.body.owner
 
+    const projectId = typeof req.body.project === 'string' ? req.body.project : ''
+    const project = await Project.findById(projectId)
+
+    if (!project) {
+      res.status(404).json({ message: 'Project not found' })
+      return
+    }
+
     const resource = await Resource.create({
       ...req.body,
       owner: req.body.owner ?? ownerId,
     })
 
-    res.status(201).json(resource)
+    await Project.findByIdAndUpdate(project._id, {
+      $addToSet: { resources: resource._id },
+    })
+
+    const populatedResource = await Resource.findById(resource._id)
+      .populate('project', 'title status priority')
+      .populate('owner', 'name email role')
+      .populate('collaborators', 'name email role')
+
+    res.status(201).json(populatedResource)
   } catch (error) {
     next(error)
   }
@@ -79,6 +97,9 @@ router.put('/:id', auth, async (req, res, next) => {
       new: true,
       runValidators: true,
     })
+      .populate('project', 'title status priority')
+      .populate('owner', 'name email role')
+      .populate('collaborators', 'name email role')
 
     if (!resource) {
       res.status(404).json({ message: 'Resource not found' })
@@ -99,6 +120,10 @@ router.delete('/:id', auth, async (req, res, next) => {
       res.status(404).json({ message: 'Resource not found' })
       return
     }
+
+    await Project.findByIdAndUpdate(resource.project, {
+      $pull: { resources: resource._id },
+    })
 
     res.status(204).send()
   } catch (error) {

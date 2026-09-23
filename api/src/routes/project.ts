@@ -61,6 +61,19 @@ const validateQueryFilters = (status?: string, priority?: string): string[] => {
   return errors
 }
 
+const projectPopulateOptions = [
+  { path: 'assignee', select: 'name email role' },
+  {
+    path: 'resources',
+    select: 'title status budget owner collaborators',
+    populate: [
+      { path: 'owner', select: 'name email role' },
+      { path: 'collaborators', select: 'name email role' },
+    ],
+  },
+  { path: 'tasks', select: 'title status priority' },
+]
+
 router.get('/', async (req, res, next) => {
   try {
     const status = typeof req.query.status === 'string' ? req.query.status : undefined
@@ -94,9 +107,7 @@ router.get('/', async (req, res, next) => {
 
     const [projects, total] = await Promise.all([
       Project.find(query)
-        .populate('assignee', 'name email role')
-        .populate('resources', 'title status budget owner')
-        .populate('tasks', 'title status priority')
+        .populate(projectPopulateOptions)
         .sort({ createdAt: -1 })
         .skip((normalizedPage - 1) * normalizedLimit)
         .limit(normalizedLimit)
@@ -141,9 +152,7 @@ router.post('/', auth, validate(projectBodyValidator), async (req, res, next) =>
     })
 
     const populatedProject = await Project.findById(project._id)
-      .populate('assignee', 'name email role')
-      .populate('resources', 'title status budget owner')
-      .populate('tasks', 'title status priority')
+      .populate(projectPopulateOptions)
 
     res.status(201).json(populatedProject)
   } catch (error) {
@@ -154,9 +163,7 @@ router.post('/', auth, validate(projectBodyValidator), async (req, res, next) =>
 router.get('/:id', async (req, res, next) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('assignee', 'name email role')
-      .populate('resources', 'title status budget owner')
-      .populate('tasks', 'title status priority')
+      .populate(projectPopulateOptions)
 
     if (!project) {
       res.status(404).json({ message: 'Project not found' })
@@ -175,9 +182,7 @@ router.put('/:id', auth, validate(projectBodyValidator), async (req, res, next) 
       new: true,
       runValidators: true,
     })
-      .populate('assignee', 'name email role')
-      .populate('resources', 'title status budget owner')
-      .populate('tasks', 'title status priority')
+      .populate(projectPopulateOptions)
 
     if (!project) {
       res.status(404).json({ message: 'Project not found' })
