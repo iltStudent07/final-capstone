@@ -2,11 +2,32 @@ import { Router } from 'express'
 import type { RequestHandler } from 'express'
 import Project from '../models/Project.js'
 import Resource from '../models/Resource.js'
-import Task from '../models/Task.js'
+import Task, { TASK_STATUSES } from '../models/Task.js'
 import User from '../models/User.js'
 import { auth } from '../middleware/auth.js'
 
 const router = Router()
+
+const formatStatusLabel = (status: string) => {
+  return status
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+const normalizeTaskStatusCounts = (
+  counts: Array<{ _id: string; count: number }>,
+) => {
+  return TASK_STATUSES.map((status) => {
+    const match = counts.find((item) => item._id === status)
+
+    return {
+      status: formatStatusLabel(status),
+      statusKey: status.replace(/[^a-z0-9]/gi, ''),
+      count: match?.count ?? 0,
+    }
+  })
+}
 
 const getDashboardStats: RequestHandler = async (_req, res, next) => {
   try {
@@ -78,6 +99,8 @@ const getDashboardStats: RequestHandler = async (_req, res, next) => {
       ]),
     ])
 
+    const normalizedTasksByStatus = normalizeTaskStatusCounts(tasksByStatus as Array<{ _id: string; count: number }>)
+
     res.json({
       totals: {
         users: totalUsers,
@@ -88,7 +111,7 @@ const getDashboardStats: RequestHandler = async (_req, res, next) => {
       grouped: {
         usersByRole,
         resourcesByStatus,
-        tasksByStatus,
+        tasksByStatus: normalizedTasksByStatus,
         tasksByPriority,
       },
       recent: {

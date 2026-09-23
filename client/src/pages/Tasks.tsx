@@ -152,6 +152,19 @@ function Tasks() {
     }
   }
 
+  const isTaskOverdue = (dueDate?: string | Date, status?: Task['status']) => {
+    if (!dueDate || status === 'done') return false
+
+    const due = new Date(dueDate)
+
+    if (Number.isNaN(due.getTime())) return false
+
+    const endOfDueDate = new Date(due)
+    endOfDueDate.setHours(23, 59, 59, 999)
+
+    return endOfDueDate < new Date()
+  }
+
   const getResourceTitle = (resource: Task['resource']) => {
     if (typeof resource === 'string') return resource
     return resource?.title || '—'
@@ -320,7 +333,14 @@ function Tasks() {
                         </span>
                       </td>
                       <td>{task.priority || '—'}</td>
-                      <td>{formatDate(task.dueDate)}</td>
+                      <td>
+                        <div className="due-date-cell">
+                          <span>{formatDate(task.dueDate)}</span>
+                          {isTaskOverdue(task.dueDate, task.status) && (
+                            <span className="status-pill due-status--overdue">Past Due</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))
                 ) : (

@@ -32,6 +32,19 @@ function Dashboard() {
     }
   }
 
+  const isTaskOverdue = (dueDate: string, status: string) => {
+    if (!dueDate || status === 'done') return false
+
+    const due = new Date(dueDate)
+
+    if (Number.isNaN(due.getTime())) return false
+
+    const endOfDueDate = new Date(due)
+    endOfDueDate.setHours(23, 59, 59, 999)
+
+    return endOfDueDate < new Date()
+  }
+
   if (loading) return <p className="page-message">Loading dashboard...</p>
   if (error) return <p className="page-message page-message--error">{error}</p>
 
@@ -40,7 +53,7 @@ function Dashboard() {
   const totalProjects = data?.totals?.projects ?? 0
   const recentTasks = data?.recent?.tasks ?? []
   const tasksByStatus = data?.grouped?.tasksByStatus ?? []
-  const recentOverdueTasks = recentTasks.filter((task) => new Date(task.dueDate) < new Date()).length
+  const recentOverdueTasks = recentTasks.filter((task) => isTaskOverdue(task.dueDate, task.status)).length
 
     return (
         <div className="page-shell dashboard-page">
@@ -75,20 +88,27 @@ function Dashboard() {
         <h2>Tasks by Status</h2>
 
         {tasksByStatus.map((item) => {
-          const barWidth = totalTasks > 0 ? `${(item.count / totalTasks) * 100}%` : '0%'
+          const taskCount = Number(item.count) || 0
+          const fillPercent = totalTasks > 0 ? Math.min((taskCount / totalTasks) * 100, 100) : 0
+          const barWidth = `${fillPercent}%`
 
           return (
             <div key={item.status} className="status-row">
-              <div className="status-row__label">{item.status}</div>
+              <div>
+                <span className={`status-pill task-status--${item.statusKey}`}>
+                  {item.status}
+                </span>
+              </div>
 
               <div className="status-row__track">
                 <div
                   className={`status-row__fill status-row__fill--${item.statusKey}`}
                   style={{ width: barWidth }}
+                  title={`${taskCount} of ${totalTasks} tasks`}
                 />
               </div>
 
-              <div className="status-row__count">{item.count}</div>
+              <div className={`status-row__count status-row__count--${item.statusKey}`}>{taskCount}</div>
             </div>
           )
         })}  
@@ -117,7 +137,14 @@ function Dashboard() {
                           {task.status}
                         </span>
                       </td>
-                      <td>{formatDate(task.dueDate)}</td>
+                      <td>
+                        <div className="due-date-cell">
+                          <span>{formatDate(task.dueDate)}</span>
+                          {isTaskOverdue(task.dueDate, task.status) && (
+                            <span className="status-pill due-status--overdue">Past Due</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))
                 ) : (
