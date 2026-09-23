@@ -95,13 +95,13 @@ function ProjectDetail() {
             </div>
 
             <div className="detail-card">
-                <h2>Tasks</h2>
+                <h2>Resources</h2>
                 <div className="detail-list">
-                    {project.tasks?.length ? project.tasks.map((task) => (
-                        <div key={task._id} className="detail-list__item">
-                            {task.title}
+                    {project.resources?.length ? project.resources.map((resource) => (
+                        <div key={resource._id ?? resource.title} className="detail-list__item">
+                            {resource.title}
                         </div>
-                    )) : <div className="detail-list__item">No tasks assigned.</div>}
+                    )) : <div className="detail-list__item">No resources assigned.</div>}
                 </div>
             </div>
 

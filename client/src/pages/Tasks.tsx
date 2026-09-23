@@ -1,7 +1,7 @@
 import { useEffect, useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import type { Task, Project } from '../types/types'
+import type { Task, Resource } from '../types/types'
 
 interface PaginationData {
   page: number
@@ -12,7 +12,7 @@ interface PaginationData {
 
 function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
+  const [resources, setResources] = useState<Resource[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState<PaginationData>({
@@ -30,8 +30,8 @@ function Tasks() {
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
-    project: '',
-    description: '',
+    resource: '',
+    details: '',
     status: 'todo',
     priority: '',
     dueDate: '',
@@ -41,16 +41,16 @@ function Tasks() {
   const [formLoading, setFormLoading] = useState(false)
 
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchResources = async () => {
       try {
-        const { data } = await api.get('/projects?limit=100')
-        setProjects(data.data || [])
+        const { data } = await api.get('/resources?limit=100')
+        setResources(Array.isArray(data) ? data : data.data || [])
       } catch (err) {
-        console.error('Failed to fetch projects:', err)
+        console.error('Failed to fetch resources:', err)
       }
     }
 
-    void fetchProjects()
+    void fetchResources()
   }, [])
 
   const fetchTasks = async (page = 1) => {
@@ -106,16 +106,16 @@ function Tasks() {
     setFormLoading(true)
 
     try {
-      if (!formData.title || !formData.project || !formData.description || !formData.priority || !formData.dueDate) {
-        setFormError('Title, project, description, priority and due date are required')
+      if (!formData.title || !formData.resource || !formData.details || !formData.priority || !formData.dueDate) {
+        setFormError('Title, resource, details, priority and due date are required')
         setFormLoading(false)
         return
       }
 
       const payload = {
         title: formData.title,
-        project: formData.project,
-        description: formData.description,
+        resource: formData.resource,
+        details: formData.details,
         status: formData.status,
         priority: formData.priority,
         dueDate: formData.dueDate,
@@ -125,8 +125,8 @@ function Tasks() {
 
       setFormData({
         title: '',
-        project: '',
-        description: '',
+        resource: '',
+        details: '',
         status: 'todo',
         priority: '',
         dueDate: '',
@@ -142,17 +142,19 @@ function Tasks() {
     }
   }
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string | Date) => {
+    if (!dateStr) return '—'
+
     try {
       return new Date(dateStr).toLocaleDateString('en-US')
     } catch {
-      return dateStr
+      return typeof dateStr === 'string' ? dateStr : '—'
     }
   }
 
-  const getProjectTitle = (project: Task['project']) => {
-    if (typeof project === 'string') return project
-    return project?.title || '—'
+  const getResourceTitle = (resource: Task['resource']) => {
+    if (typeof resource === 'string') return resource
+    return resource?.title || '—'
   }
 
   return (
@@ -183,15 +185,15 @@ function Tasks() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Project <span className="form-required">*</span></label>
+                <label className="form-label">Resource <span className="form-required">*</span></label>
                 <select
                   className="form-control"
-                  value={formData.project}
-                  onChange={(e) => handleFormChange('project', e.target.value)}
+                  value={formData.resource}
+                  onChange={(e) => handleFormChange('resource', e.target.value)}
                 >
-                  <option value="">Select a project</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>{project.title}</option>
+                  <option value="">Select a resource</option>
+                  {resources.map((resource) => (
+                    <option key={resource._id} value={resource._id}>{resource.title}</option>
                   ))}
                 </select>
               </div>
@@ -201,8 +203,8 @@ function Tasks() {
                 <input
                   className="form-control"
                   type="text"
-                  value={formData.description}
-                  onChange={(e) => handleFormChange('description', e.target.value)}
+                  value={formData.details}
+                  onChange={(e) => handleFormChange('details', e.target.value)}
                   placeholder="Description of task"
                 />
               </div>
@@ -232,7 +234,6 @@ function Tasks() {
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
-                  <option value="critical">Critical</option>
                 </select>
               </div>
 
@@ -299,7 +300,7 @@ function Tasks() {
               <thead>
                 <tr>
                   <th>Title</th>
-                  <th>Project</th>
+                  <th>Resource</th>
                   <th>Description</th>
                   <th>Status</th>
                   <th>Priority</th>
@@ -311,8 +312,8 @@ function Tasks() {
                   tasks.map((task) => (
                     <tr key={task._id}>
                       <td><Link className="table-link" to={`/tasks/${task._id}`}>{task.title}</Link></td>
-                      <td>{getProjectTitle(task.project)}</td>
-                      <td>{task.description}</td>
+                      <td>{getResourceTitle(task.resource)}</td>
+                      <td>{task.details}</td>
                       <td>
                         <span className={`status-pill task-status--${task.status}`}>
                           {task.status}

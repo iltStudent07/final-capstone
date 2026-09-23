@@ -40,6 +40,10 @@ const projectBodyValidator = (body: unknown): string[] => {
     errors.push('Project tasks must be an array')
   }
 
+  if (body.resources !== undefined && !Array.isArray(body.resources)) {
+    errors.push('Project resources must be an array')
+  }
+
   return errors
 }
 
@@ -91,6 +95,7 @@ router.get('/', async (req, res, next) => {
     const [projects, total] = await Promise.all([
       Project.find(query)
         .populate('assignee', 'name email role')
+        .populate('resources', 'title status budget owner')
         .populate('tasks', 'title status priority')
         .sort({ createdAt: -1 })
         .skip((normalizedPage - 1) * normalizedLimit)
@@ -115,13 +120,14 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', auth, validate(projectBodyValidator), async (req, res, next) => {
   try {
-    const { title, description = '', status, priority, assignee, tasks = [] } = req.body as {
+    const { title, description = '', status, priority, assignee, tasks = [], resources = [] } = req.body as {
       title: string
       description?: string
       status?: (typeof PROJECT_STATUSES)[number]
       priority?: (typeof PROJECT_PRIORITIES)[number]
       assignee?: string | null
       tasks?: string[]
+      resources?: string[]
     }
 
     const project = await Project.create({
@@ -131,10 +137,12 @@ router.post('/', auth, validate(projectBodyValidator), async (req, res, next) =>
       priority,
       assignee: assignee ?? null,
       tasks,
+      resources,
     })
 
     const populatedProject = await Project.findById(project._id)
       .populate('assignee', 'name email role')
+      .populate('resources', 'title status budget owner')
       .populate('tasks', 'title status priority')
 
     res.status(201).json(populatedProject)
@@ -147,6 +155,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const project = await Project.findById(req.params.id)
       .populate('assignee', 'name email role')
+      .populate('resources', 'title status budget owner')
       .populate('tasks', 'title status priority')
 
     if (!project) {
@@ -167,6 +176,7 @@ router.put('/:id', auth, validate(projectBodyValidator), async (req, res, next) 
       runValidators: true,
     })
       .populate('assignee', 'name email role')
+      .populate('resources', 'title status budget owner')
       .populate('tasks', 'title status priority')
 
     if (!project) {

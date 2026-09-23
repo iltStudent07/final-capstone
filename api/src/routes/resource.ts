@@ -16,11 +16,16 @@ router.get('/', async (req, res, next) => {
       query.where('owner').equals(req.query.owner)
     }
 
+    if (typeof req.query.project === 'string') {
+      query.where('project').equals(req.query.project)
+    }
+
     if (typeof req.query.tag === 'string') {
       query.where('tags').in([req.query.tag])
     }
 
     const resources = await query
+      .populate('project', 'title status priority')
       .populate('owner', 'name email role')
       .populate('collaborators', 'name email role')
       .sort({ createdAt: -1 })
@@ -53,6 +58,7 @@ router.post('/', auth, async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const resource = await Resource.findById(req.params.id)
+      .populate('project', 'title status priority')
       .populate('owner', 'name email role')
       .populate('collaborators', 'name email role')
 

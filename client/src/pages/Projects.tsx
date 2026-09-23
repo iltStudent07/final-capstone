@@ -187,7 +187,7 @@ function Projects() {
     }
   }
 
-  const getTaskCount = (project: Project) => project.tasks?.length ?? 0
+  const getResourceCount = (project: Project) => project.resources?.length ?? 0
 
   const getAssigneeName = (assignee?: string | User | null) => {
     if (!assignee) return '—'
@@ -338,7 +338,7 @@ function Projects() {
                   <th>Description</th>
                   <th>Status</th>
                   <th>Priority</th>
-                  <th>Tasks</th>
+                  <th>Resources</th>
                   <th>Assignee</th>
                   <th>Actions</th>
                 </tr>
@@ -359,7 +359,7 @@ function Projects() {
                         </span>
                       </td>
                       <td>{project.priority}</td>
-                      <td>{getTaskCount(project)}</td>
+                      <td>{getResourceCount(project)}</td>
                       <td>{getAssigneeName(project.assignee)}</td>
                       <td>
                         <button

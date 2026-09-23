@@ -8,6 +8,7 @@ export interface IProject {
   description: string
   status: (typeof PROJECT_STATUSES)[number]
   priority: (typeof PROJECT_PRIORITIES)[number]
+  resources: Types.ObjectId[]
   tasks: Types.ObjectId[]
   assignee?: Types.ObjectId | null
   createdAt: Date
@@ -39,6 +40,10 @@ const projectSchema = new Schema<IProject>(
       enum: PROJECT_PRIORITIES,
       default: 'medium',
       required: true,
+    },
+    resources: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Resource' }],
+      default: [],
     },
     tasks: {
       type: [{ type: Schema.Types.ObjectId, ref: 'Task' }],

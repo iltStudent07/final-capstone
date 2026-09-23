@@ -32,6 +32,7 @@ export type Project = {
   description: string
   status: string
   priority: string
+  resources?: Resource[] | null
   tasks?: Task[] | null
   assignee?: string | User | null
 }
@@ -49,6 +50,7 @@ export type ProgressEntry = {
 
 export type Resource = {
   _id?: string
+  project?: string | Project | null
   title: string
   description: string
   budget: number
