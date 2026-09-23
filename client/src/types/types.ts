@@ -80,7 +80,7 @@ export type DashboardTask = {
   title: string
   status: string
   dueDate: string
-  project?: {
+  resource?: {
     _id?: string
     title?: string
   }
@@ -90,6 +90,7 @@ export type DashboardStats = {
   totals: {
     tasks: number
     resources: number
+    projects: number
     users: number
   }
   tasksByStatus: Array<{

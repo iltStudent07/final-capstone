@@ -312,7 +312,7 @@ function Tasks() {
                   tasks.map((task) => (
                     <tr key={task._id}>
                       <td><Link className="table-link" to={`/tasks/${task._id}`}>{task.title}</Link></td>
-                      <td>{getResourceTitle(task.resource)}</td>
+                      <td><Link className="table-link" to={`/resources/${typeof task.resource === 'object' ? task.resource?._id : task.resource}`}>{getResourceTitle(task.resource)}</Link></td>
                       <td>{task.details}</td>
                       <td>
                         <span className={`status-pill task-status--${task.status}`}>

@@ -37,7 +37,7 @@ function Dashboard() {
 
   const totalTasks = data?.totals?.tasks ?? 0
   const totalResources = data?.totals?.resources ?? 0
-  const totalUsers = data?.totals?.users ?? 0
+  const totalProjects = data?.totals?.projects ?? 0
   const recentTasks = data?.recent?.tasks ?? []
   const tasksByStatus = data?.grouped?.tasksByStatus ?? []
   const recentOverdueTasks = recentTasks.filter((task) => new Date(task.dueDate) < new Date()).length
@@ -60,11 +60,11 @@ function Dashboard() {
                   <strong className="stat-card__value">{totalTasks}</strong>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-card__label">Total Users</span>
-                  <strong className="stat-card__value">{totalUsers}</strong>
+                  <span className="stat-card__label">Total Projects</span>
+                  <strong className="stat-card__value">{totalProjects}</strong>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-card__label">Recent Overdue Tasks</span>
+                  <span className="stat-card__label"> Overdue Tasks</span>
                   <strong className="stat-card__value">{recentOverdueTasks}</strong>
                 </div>
             </div>
@@ -101,7 +101,7 @@ function Dashboard() {
               <thead>
                 <tr>
                   <th>Task</th>
-                  <th>Project</th>
+                  <th>Resource</th>
                   <th>Status</th>
                   <th>Due Date</th>
                 </tr>
@@ -111,7 +111,7 @@ function Dashboard() {
                   recentTasks.map((task) => (
                     <tr key={task._id}>
                       <td><Link className="table-link" to={`/tasks/${task._id}`}>{task.title}</Link></td>
-                      <td>{task.project?.title ?? '—'}</td>
+                      <td><Link className="table-link" to={`/resources/${task.resource?._id}`}>{task.resource?.title ?? '—'}</Link></td>
                       <td>
                         <span className={`status-pill task-status--${task.status.toLowerCase().replace(/[^a-z0-9-]/g, '')}`}>
                           {task.status}

@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import type { RequestHandler } from 'express'
+import Project from '../models/Project.js'
 import Resource from '../models/Resource.js'
 import Task from '../models/Task.js'
 import User from '../models/User.js'
@@ -11,6 +12,7 @@ const getDashboardStats: RequestHandler = async (_req, res, next) => {
   try {
     const [
       totalUsers,
+      totalProjects,
       totalResources,
       totalTasks,
       usersByRole,
@@ -25,6 +27,7 @@ const getDashboardStats: RequestHandler = async (_req, res, next) => {
       averageResourceBudget,
     ] = await Promise.all([
       User.countDocuments(),
+      Project.countDocuments(),
       Resource.countDocuments(),
       Task.countDocuments(),
       User.aggregate([
@@ -78,6 +81,7 @@ const getDashboardStats: RequestHandler = async (_req, res, next) => {
     res.json({
       totals: {
         users: totalUsers,
+        projects: totalProjects,
         resources: totalResources,
         tasks: totalTasks,
       },

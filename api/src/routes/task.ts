@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import Task from '../models/Task.js'
-import { auth } from '../middleware/auth.js'
+import { auth, type AuthenticatedRequest } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -37,8 +37,22 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', auth, async (req, res, next) => {
   try {
-    const task = await Task.create(req.body)
-    res.status(201).json(task)
+    const authenticatedUser = (req as AuthenticatedRequest).user
+    const assigneeId =
+      typeof authenticatedUser === 'object' && authenticatedUser !== null && 'id' in authenticatedUser
+        ? String(authenticatedUser.id)
+        : req.body.assignee
+
+    const task = await Task.create({
+      ...req.body,
+      assignee: req.body.assignee ?? assigneeId,
+    })
+
+    const populatedTask = await Task.findById(task._id)
+      .populate('assignee', 'name email role')
+      .populate('resource', 'title status owner')
+
+    res.status(201).json(populatedTask)
   } catch (error) {
     next(error)
   }
