@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Project, User } from '../types/types'
 
@@ -11,6 +12,7 @@ interface PaginationData {
 }
 
 function Projects() {
+  const { user } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -199,15 +201,17 @@ function Projects() {
     <div className="page-shell project-page">
       <div className="page-header">
         <h1 className="page-header__title">Projects</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="app-button page-header__action"
-        >
-          {showForm ? 'Cancel' : 'New Project'}
-        </button>
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="app-button page-header__action"
+          >
+            {showForm ? 'Cancel' : 'New Project'}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {user?.role === 'admin' && showForm && (
         <div className="panel form-card">
           <h2>Create New Project</h2>
           <form onSubmit={handleSubmitProject}>
@@ -362,12 +366,14 @@ function Projects() {
                       <td>{getResourceCount(project)}</td>
                       <td>{getAssigneeName(project.assignee)}</td>
                       <td>
-                        <button
-                          onClick={() => void handleDelete(project._id)}
-                          className="app-button app-button--danger"
-                        >
-                          Delete
-                        </button>
+                        {user?.role === 'admin' && (
+                          <button
+                            onClick={() => void handleDelete(project._id)}
+                            className="app-button app-button--danger"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))

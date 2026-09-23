@@ -5,6 +5,14 @@ import { auth, type AuthenticatedRequest } from '../middleware/auth.js'
 
 const router = Router()
 
+const getAuthRole = (req: AuthenticatedRequest) => {
+  const user = req.user
+
+  if (!user || typeof user !== 'object') return undefined
+
+  return typeof user.role === 'string' ? user.role : undefined
+}
+
 router.get('/', async (req, res, next) => {
   try {
     const query = Resource.find()
@@ -39,6 +47,13 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', auth, async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot create resources' })
+      return
+    }
+
     const authenticatedUser = (req as AuthenticatedRequest).user
     const ownerId =
       typeof authenticatedUser === 'object' && authenticatedUser !== null && 'id' in authenticatedUser
@@ -93,6 +108,13 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', auth, async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot edit resources' })
+      return
+    }
+
     const resource = await Resource.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -114,6 +136,13 @@ router.put('/:id', auth, async (req, res, next) => {
 
 router.delete('/:id', auth, async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot delete resources' })
+      return
+    }
+
     const resource = await Resource.findByIdAndDelete(req.params.id)
 
     if (!resource) {

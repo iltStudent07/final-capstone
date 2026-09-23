@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState, type ChangeEvent, type SubmitEvent } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Project, Resource, User } from '../types/types'
 
 function ProjectDetail() {
+    const { user } = useAuth()
     const { id } = useParams<{id: string}>()
     const nav = useNavigate()
     const [project, setProject] = useState<Project | null>(null)
@@ -245,33 +247,39 @@ function ProjectDetail() {
 
             <div className="detail-card">
                 <h2>Update Status</h2>
-                <div className="detail-status-control">
-                    <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
-                        <option value="todo">Todo</option>
-                        <option value="in-progress">In-Progress</option>
-                        <option value="review">Review</option>
-                        <option value="done">Done</option>
-  
-                    </select>
-                    <button onClick={handleStatusUpdate} disabled={updating} className="app-button app-button--primary">
-                        {updating ? 'Updating...' : 'Update Status'}
-                    </button>
-                </div>
+                {user?.role === 'admin' ? (
+                    <div className="detail-status-control">
+                        <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
+                            <option value="todo">Todo</option>
+                            <option value="in-progress">In-Progress</option>
+                            <option value="review">Review</option>
+                            <option value="done">Done</option>
+
+                        </select>
+                        <button onClick={handleStatusUpdate} disabled={updating} className="app-button app-button--primary">
+                            {updating ? 'Updating...' : 'Update Status'}
+                        </button>
+                    </div>
+                ) : (
+                    <p className="page-message">Only admins can edit project status.</p>
+                )}
             </div>
 
             <div className="detail-card">
                 <div className="detail-card__header">
                     <h2>Resources</h2>
-                    <button
-                        type="button"
-                        className="app-button app-button--primary"
-                        onClick={() => setShowResourceForm((prev) => !prev)}
-                    >
-                        {showResourceForm ? 'Cancel' : 'New Resource'}
-                    </button>
+                    {user?.role === 'admin' && (
+                        <button
+                            type="button"
+                            className="app-button app-button--primary"
+                            onClick={() => setShowResourceForm((prev) => !prev)}
+                        >
+                            {showResourceForm ? 'Cancel' : 'New Resource'}
+                        </button>
+                    )}
                 </div>
 
-                {showResourceForm && (
+                {user?.role === 'admin' && showResourceForm && (
                     <form className="detail-form" onSubmit={handleSubmitResource}>
                         <div className="form-grid">
                             <div className="form-group">
@@ -416,24 +424,28 @@ function ProjectDetail() {
                                     <span>Collaborators: {getCollaboratorNames(resource)}</span>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => void handleDeleteResource(resource._id)}
-                                disabled={resourceActionLoading === resource._id}
-                                className="app-button app-button--danger"
-                            >
-                                {resourceActionLoading === resource._id ? 'Deleting...' : 'Delete'}
-                            </button>
+                            {user?.role === 'admin' && (
+                                <button
+                                    type="button"
+                                    onClick={() => void handleDeleteResource(resource._id)}
+                                    disabled={resourceActionLoading === resource._id}
+                                    className="app-button app-button--danger"
+                                >
+                                    {resourceActionLoading === resource._id ? 'Deleting...' : 'Delete'}
+                                </button>
+                            )}
                         </div>
                     )) : <div className="detail-list__item">No resources assigned.</div>}
                 </div>
             </div>
 
-            <div className="detail-actions">
-                <button onClick={handleDelete} className="app-button app-button--danger">
-                    Delete Project
-                </button>
-            </div>
+            {user?.role === 'admin' && (
+                <div className="detail-actions">
+                    <button onClick={handleDelete} className="app-button app-button--danger">
+                        Delete Project
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

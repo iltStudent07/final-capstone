@@ -2,8 +2,17 @@ import { Router } from 'express'
 import Project, { PROJECT_PRIORITIES, PROJECT_STATUSES } from '../models/Project.js'
 import { auth } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
+import { type AuthenticatedRequest } from '../middleware/auth.js'
 
 const router = Router()
+
+const getAuthRole = (req: AuthenticatedRequest) => {
+  const user = req.user
+
+  if (!user || typeof user !== 'object') return undefined
+
+  return typeof user.role === 'string' ? user.role : undefined
+}
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null
@@ -131,6 +140,13 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', auth, validate(projectBodyValidator), async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot create projects' })
+      return
+    }
+
     const { title, description = '', status, priority, assignee, tasks = [], resources = [] } = req.body as {
       title: string
       description?: string
@@ -178,6 +194,13 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', auth, validate(projectBodyValidator), async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot edit projects' })
+      return
+    }
+
     const project = await Project.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -197,6 +220,13 @@ router.put('/:id', auth, validate(projectBodyValidator), async (req, res, next) 
 
 router.delete('/:id', auth, async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot delete projects' })
+      return
+    }
+
     const project = await Project.findByIdAndDelete(req.params.id)
 
     if (!project) {

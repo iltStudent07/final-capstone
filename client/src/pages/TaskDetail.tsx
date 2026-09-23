@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Task } from '../types/types'
 
 function TaskDetail() {
+    const { user } = useAuth()
     const { id } = useParams<{id: string}>()
     const nav = useNavigate()
     const [task, setTask] = useState<Task | null>(null)
@@ -114,11 +116,13 @@ function TaskDetail() {
                 <p>{task.details}</p>
             </div>
 
-            <div className="detail-actions">
-                <button onClick={handleDelete} className="app-button app-button--danger">
-                    Delete Task
-                </button>
-            </div>
+            {user?.role === 'admin' && (
+                <div className="detail-actions">
+                    <button onClick={handleDelete} className="app-button app-button--danger">
+                        Delete Task
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

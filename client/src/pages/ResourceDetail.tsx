@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Resource } from '../types/types'
 
 function ResourceDetail() {
+  const { user } = useAuth()
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const [resource, setResource] = useState<Resource | null>(null)
@@ -128,17 +130,21 @@ function ResourceDetail() {
 
       <div className="detail-card">
         <h2>Update Status</h2>
-        <div className="detail-status-control">
-          <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value as Resource['status'])}>
-            <option value="planning">Planning</option>
-            <option value="active">Active</option>
-            <option value="blocked">Blocked</option>
-            <option value="completed">Completed</option>
-          </select>
-          <button onClick={handleStatusUpdate} disabled={updating} className="app-button app-button--primary">
-            {updating ? 'Updating...' : 'Update Status'}
-          </button>
-        </div>
+        {user?.role === 'admin' ? (
+          <div className="detail-status-control">
+            <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value as Resource['status'])}>
+              <option value="planning">Planning</option>
+              <option value="active">Active</option>
+              <option value="blocked">Blocked</option>
+              <option value="completed">Completed</option>
+            </select>
+            <button onClick={handleStatusUpdate} disabled={updating} className="app-button app-button--primary">
+              {updating ? 'Updating...' : 'Update Status'}
+            </button>
+          </div>
+        ) : (
+          <p className="page-message">Only admins can edit resource status.</p>
+        )}
       </div>
 
       <div className="detail-card">
@@ -155,11 +161,13 @@ function ResourceDetail() {
         </div>
       </div>
 
-      <div className="detail-actions">
-        <button onClick={handleDelete} disabled={deleting} className="app-button app-button--danger">
-          {deleting ? 'Deleting...' : 'Delete Resource'}
-        </button>
-      </div>
+      {user?.role === 'admin' && (
+        <div className="detail-actions">
+          <button onClick={handleDelete} disabled={deleting} className="app-button app-button--danger">
+            {deleting ? 'Deleting...' : 'Delete Resource'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
