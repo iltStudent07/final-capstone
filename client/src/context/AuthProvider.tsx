@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null
     }
   })
+
   const [loading] = useState(false)
 
   const persistAuth = (newToken: string, newUser: User) => {
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     name: string,
     email: string,
     password: string,
-    role: string,
+    role: 'admin' | 'member',
   ) => {
     const { data } = await api.post('/auth/register', {
       name,
