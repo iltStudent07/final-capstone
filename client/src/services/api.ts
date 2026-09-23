@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+const loginUrl = `${import.meta.env.BASE_URL}login`
+
 const api = axios.create({
   baseURL: '/api',
 });
@@ -19,7 +21,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.location.href = '/login'
+      window.location.href = loginUrl
     }
 
     return Promise.reject(error)

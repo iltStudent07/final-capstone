@@ -142,11 +142,15 @@ function Tasks() {
     }
   }
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string | Date) => {
+    if (!dateStr) {
+      return '—'
+    }
+
     try {
       return new Date(dateStr).toLocaleDateString('en-US')
     } catch {
-      return dateStr
+      return String(dateStr)
     }
   }
 

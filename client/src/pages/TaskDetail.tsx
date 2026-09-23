@@ -3,6 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api'
 import type { Task } from '../types/types'
 
+const formatTaskDate = (date?: string | Date) => {
+    if (!date) {
+        return '—'
+    }
+
+    return new Date(date).toLocaleDateString()
+}
+
 function TaskDetail() {
     const { id } = useParams<{id: string}>()
     const nav = useNavigate()
@@ -67,7 +75,7 @@ function TaskDetail() {
 
             <div className="detail-card">
                 <div className="detail-grid">
-                    <div className="detail-item"><strong>Due Date</strong>{new Date(task.dueDate).toLocaleDateString()}</div>
+                    <div className="detail-item"><strong>Due Date</strong>{formatTaskDate(task.dueDate)}</div>
                     <div className="detail-item"><strong>Priority</strong>{task.priority}</div>
                     <div className="detail-item"><strong>Status</strong>{task.status}</div>
                 </div>

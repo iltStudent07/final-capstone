@@ -12,9 +12,11 @@ export interface ChecklistItem {
 
 export type Task = {
   _id: string
+  project?: string | Project | null
   resource: string | Resource | null
   assignee: string | User | null
   title: string
+  description?: string
   details: string
   estimateHours: number
   priority: 'low' | 'medium' | 'high'
