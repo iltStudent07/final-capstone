@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import Project, { PROJECT_PRIORITIES, PROJECT_STATUSES } from '../models/Project.js'
+import Resource from '../models/Resource.js'
+import Task from '../models/Task.js'
 import { auth } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { type AuthenticatedRequest } from '../middleware/auth.js'
@@ -227,12 +229,27 @@ router.delete('/:id', auth, async (req, res, next) => {
       return
     }
 
-    const project = await Project.findByIdAndDelete(req.params.id)
+    const project = await Project.findById(req.params.id)
 
     if (!project) {
       res.status(404).json({ message: 'Project not found' })
       return
     }
+
+    const resources = await Resource.find({ project: project._id }).select('_id').lean()
+    const resourceIds = resources.map((resource) => resource._id)
+    const directTaskIds = Array.isArray(project.tasks) ? project.tasks : []
+
+    if (resourceIds.length > 0) {
+      await Task.deleteMany({ resource: { $in: resourceIds } })
+    }
+
+    if (directTaskIds.length > 0) {
+      await Task.deleteMany({ _id: { $in: directTaskIds } })
+    }
+
+    await Resource.deleteMany({ project: project._id })
+    await Project.findByIdAndDelete(project._id)
 
     res.status(204).send()
   } catch (error) {

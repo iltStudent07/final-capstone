@@ -28,6 +28,11 @@ const progressEntrySchema = new Schema({
     },
 }, { _id: false });
 const resourceSchema = new Schema({
+    project: {
+        type: Schema.Types.ObjectId,
+        ref: 'Project',
+        required: true,
+    },
     title: {
         type: String,
         required: true,

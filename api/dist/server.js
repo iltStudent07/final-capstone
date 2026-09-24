@@ -7,6 +7,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import projectRoutes from './routes/project.js';
 import resourceRoutes from './routes/resource.js';
 import taskRoutes from './routes/task.js';
+import userRoutes from './routes/user.js';
 import errorHandler from './middleware/errorHandler.js';
 dotenv.config();
 const app = express();
@@ -21,6 +22,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/users', userRoutes);
 app.use(errorHandler);
 const startServer = async () => {
     await connectDB();
