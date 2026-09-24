@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import Project from '../models/Project.js'
 import Resource from '../models/Resource.js'
+import Task from '../models/Task.js'
 import { auth, type AuthenticatedRequest } from '../middleware/auth.js'
 
 const router = Router()
@@ -143,15 +144,24 @@ router.delete('/:id', auth, async (req, res, next) => {
       return
     }
 
-    const resource = await Resource.findByIdAndDelete(req.params.id)
+    const resource = await Resource.findById(req.params.id)
 
     if (!resource) {
       res.status(404).json({ message: 'Resource not found' })
       return
     }
 
+    const tasks = await Task.find({ resource: resource._id }).select('_id').lean()
+    const taskIds = tasks.map((task) => task._id)
+
+    await Task.deleteMany({ resource: resource._id })
+    await Resource.findByIdAndDelete(resource._id)
+
     await Project.findByIdAndUpdate(resource.project, {
-      $pull: { resources: resource._id },
+      $pull: {
+        resources: resource._id,
+        ...(taskIds.length > 0 ? { tasks: { $in: taskIds } } : {}),
+      },
     })
 
     res.status(204).send()
