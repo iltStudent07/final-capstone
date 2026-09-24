@@ -433,6 +433,27 @@ npm run preview  # Preview production build
 
 See the [Docker Setup](#docker-setup) section above.
 
+### GitHub Actions Deployment to Main
+
+Changes from `dev` should be merged into `main` through a pull request. After the PR is merged into `main`, the deploy workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs automatically.
+
+It will:
+- build the API and client Docker images
+- push both images to ECR
+- update the EKS cluster
+- apply the Kubernetes manifests in [k8s/](k8s)
+- update the `api` and `client` deployments to the new image tags
+
+Required GitHub Secrets:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `EKS_CLUSTER_NAME`
+- `MONGODB_URI`
+- `JWT_SECRET`
+
+The client and API images are published with both the commit SHA and `latest` tags, so the EKS deployment always picks up the newest main build.
+
 ### EKS (Kubernetes) Deployment
 
 #### Prerequisites

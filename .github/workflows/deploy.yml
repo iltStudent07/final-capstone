@@ -1,0 +1,92 @@
+name: Deploy to EKS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build, Push, and Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get AWS account ID
+        id: aws-account
+        run: echo "account_id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set deployment image names
+        run: |
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> "$GITHUB_ENV"
+          echo "EKS_CLUSTER_NAME=${{ secrets.EKS_CLUSTER_NAME }}" >> "$GITHUB_ENV"
+          echo "K8S_NAMESPACE=capstone" >> "$GITHUB_ENV"
+          echo "API_IMAGE=${{ steps.aws-account.outputs.account_id }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/capstone-api" >> "$GITHUB_ENV"
+          echo "CLIENT_IMAGE=${{ steps.aws-account.outputs.account_id }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/capstone-client" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Build and push API image
+        run: |
+          docker build -t "$API_IMAGE:$IMAGE_TAG" -t "$API_IMAGE:latest" ./api
+          docker push "$API_IMAGE:$IMAGE_TAG"
+          docker push "$API_IMAGE:latest"
+
+      - name: Build and push client image
+        run: |
+          docker build -t "$CLIENT_IMAGE:$IMAGE_TAG" -t "$CLIENT_IMAGE:latest" ./client
+          docker push "$CLIENT_IMAGE:$IMAGE_TAG"
+          docker push "$CLIENT_IMAGE:latest"
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+
+      - name: Ensure namespace exists
+        run: kubectl apply -f k8s/namespace.yaml
+
+      - name: Apply runtime secret
+        run: |
+          kubectl create secret generic capstone-secrets \
+            --from-literal=MONGODB_URI="${{ secrets.MONGODB_URI }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -n "$K8S_NAMESPACE" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/mongo.yaml
+          kubectl apply -f k8s/api.yaml
+          kubectl apply -f k8s/client.yaml
+
+      - name: Update deployment images
+        run: |
+          kubectl set image deployment/api api="$API_IMAGE:$IMAGE_TAG" -n "$K8S_NAMESPACE"
+          kubectl set image deployment/client client="$CLIENT_IMAGE:$IMAGE_TAG" -n "$K8S_NAMESPACE"
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/mongo -n "$K8S_NAMESPACE" --timeout=300s
+          kubectl rollout status deployment/api -n "$K8S_NAMESPACE" --timeout=300s
+          kubectl rollout status deployment/client -n "$K8S_NAMESPACE" --timeout=300s
+
+      - name: Show services
+        run: kubectl get svc -n "$K8S_NAMESPACE"
