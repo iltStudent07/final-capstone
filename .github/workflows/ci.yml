@@ -141,7 +141,7 @@ jobs:
       - name: Run client tests
         if: ${{ steps.client-project.outputs.exists == 'true' && steps.client-project.outputs.has-test-script == 'true' }}
         working-directory: client
-        run: npm test -- --run
+        run: npm test
 
       - name: Skip client tests
         if: ${{ steps.client-project.outputs.exists == 'true' && steps.client-project.outputs.has-test-script != 'true' }}
