@@ -1,0 +1,37 @@
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build: ./api
+    restart: on-failure
+    ports:
+      - "4000:4000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/capstone
+      - MONGO_URI=mongodb://mongo:27017/capstone
+      - JWT_SECRET=dev-secret-change-in-production
+      - PORT=4000
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  client:
+    build: ./client
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  mongo-data:
