@@ -71,7 +71,7 @@ This is a collaborative project to showcase our skills from all 3 phases of the 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+ (or 20 LTS recommended)
+- Node.js 20+ (CI runs on Node 20 and 22)
 - npm or npm ci
 - MongoDB Atlas account or local MongoDB instance
 - Docker & Docker Compose (for containerized setup)
@@ -624,7 +624,8 @@ eksctl delete cluster --name capstone --region us-east-1
 See `.github/workflows/ci.yml` for CI/CD configuration. The workflow:
 1. Runs linting and tests on every PR
 2. Builds Docker images if Dockerfiles exist
-3. Can be extended for automatic EKS deployment
+3. Runs the client job on Node 20 and 22 to match the supported CI matrix
+4. Can be extended for automatic EKS deployment
 
 
 ## Support
