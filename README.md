@@ -2,16 +2,42 @@
 
 This is a collaborative project to showcase our skills from all 3 phases of the FSE program. It has a custom HTML/CSS landing page, a React + TypeScript single-page application, an Express + TypeScript REST API with MongoDB, Docker containerization, Kubernetes deployment to EKS, and CI/CD with GitHub Actions.
 
+## Live Deployment
+
+- Landing page / LoadBalancer URL: http://aa478a98d465c4b7c8da08bb65726748-386141645.us-east-1.elb.amazonaws.com
+- React application: http://aa478a98d465c4b7c8da08bb65726748-386141645.us-east-1.elb.amazonaws.com/app/
+
 ## Table of Contents
 
+- [Live Deployment](#live-deployment)
+- [Feature List](#feature-list)
+- [Team Members](#team-members)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
 - [Setup Instructions](#setup-instructions)
 - [Running Locally](#running-locally)
 - [Docker Setup](#docker-setup)
 - [Environment Variables](#environment-variables)
+- [API Test Scenarios](#api-test-scenarios)
+- [Architecture Documentation](#architecture-documentation)
 - [Troubleshooting](#troubleshooting)
 - [Common Issues](#common-issues)
+
+## Feature List
+
+- User registration and login with JWT-based authentication
+- Protected dashboard with project, task, resource, and user summaries
+- Project management with filtering, pagination, role-based permissions, and detail views
+- Task management with assignment, status updates, priority tracking, and member restrictions
+- Resource management linked to projects with owners, collaborators, budgets, and sprint windows
+- Static marketing site served at `/` and React SPA served at `/app/`
+- Containerized local development with Docker Compose
+- Kubernetes deployment to Amazon EKS with ECR-hosted images
+
+## Team Members
+
+- Malik Campbell-Greene — Project Manager, back-end development, API/data modeling, deployment support
+- Josh Gaudet — Front-end development, React UI, landing pages, client integration
 
 ## Project Structure
 
@@ -224,6 +250,49 @@ Get-NetTCPConnection -LocalPort 27017
 
 - Uses `import.meta.env.BASE_URL` (set in `vite.config.ts`)
 - In production: set `base: '/app/'` in vite.config.ts
+
+## API Test Scenarios
+
+The following API scenarios are covered as documented acceptance tests for manual or automated validation:
+
+1. **GET returns correct data**
+  - Request: `GET /api/projects?page=1&limit=10`
+  - Expected: `200 OK` with a JSON payload containing `data` and `pagination`
+  - Validation: returned records match applied filters, pagination values are present, and each project includes populated related data when available
+
+2. **POST creates resources with valid data**
+  - Request: `POST /api/projects` with a valid admin token and a body containing a title, description, status, and priority
+  - Expected: `201 Created`
+  - Validation: response contains the created project and trimmed values are persisted
+
+3. **POST rejects invalid data**
+  - Request: `POST /api/auth/register` with an invalid email or short password
+  - Expected: `400 Bad Request`
+  - Validation: response includes `Validation failed` details explaining why the payload was rejected
+
+4. **Auth endpoints work**
+  - Requests: `POST /api/auth/register` followed by `POST /api/auth/login`
+  - Expected: `201 Created` for register and `200 OK` for login
+  - Validation: both responses return a JWT and normalized user payload
+
+5. **Protected endpoints require valid tokens**
+  - Request: `GET /api/dashboard` or `GET /api/tasks` without a bearer token
+  - Expected: `401 Unauthorized`
+  - Validation: protected routes deny access until a valid JWT is sent
+
+6. **Role restrictions are enforced**
+  - Request: `POST /api/projects` or `DELETE /api/tasks/:id` using a member token
+  - Expected: `403 Forbidden`
+  - Validation: member users cannot create projects, resources, or delete tasks reserved for admins
+
+## Architecture Documentation
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for:
+
+- system diagrams
+- technology stack and versions
+- API endpoint reference
+- deployment architecture
 
 ## Troubleshooting
 
