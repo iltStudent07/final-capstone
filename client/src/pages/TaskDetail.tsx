@@ -1,35 +1,57 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Task } from '../types/types'
 
+const formatTaskDate = (date?: string | Date) => {
+    if (!date) {
+        return '—'
+    }
+
+    const parsedDate = new Date(date)
+
+    if (Number.isNaN(parsedDate.getTime())) {
+        return '—'
+    }
+
+    return parsedDate.toLocaleDateString()
+}
+
 function TaskDetail() {
     const { user } = useAuth()
-    const { id } = useParams<{id: string}>()
+    const { id } = useParams<{ id: string }>()
     const nav = useNavigate()
     const [task, setTask] = useState<Task | null>(null)
-    const [loading, setLoading] = useState<boolean>(true)
-    const [status, setStatus] = useState<string>('')
-    const [updating, setUpdating] = useState<boolean>(false)
+    const [loading, setLoading] = useState(true)
+    const [status, setStatus] = useState('')
+    const [updating, setUpdating] = useState(false)
 
     useEffect(() => {
         const fetchTask = async () => {
+            if (!id) {
+                setTask(null)
+                setLoading(false)
+                return
+            }
+
             try {
                 const response = await api.get(`/tasks/${id}`)
                 setTask(response.data)
                 setStatus(response.data.status)
-                setLoading(false)
             } catch {
+                setTask(null)
+            } finally {
                 setLoading(false)
             }
         }
-        fetchTask()
+
+        void fetchTask()
     }, [id])
 
-
     const handleStatusUpdate = async () => {
-        if (!task) return
+        if (!task || !id) return
+
         setUpdating(true)
         try {
             const response = await api.put(`/tasks/${id}`, { status })
@@ -43,9 +65,10 @@ function TaskDetail() {
     }
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+        if (!id || !window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
             return
         }
+
         try {
             await api.delete(`/tasks/${id}`)
             nav('/tasks')
@@ -68,7 +91,10 @@ function TaskDetail() {
     }
 
     if (loading) return <p className="page-message">Loading task...</p>
-    if (!task) return <p className="page-message page-message--error">Task not found. <button className="app-button" onClick={() => nav('/tasks')}>Back to Tasks</button></p>
+
+    if (!task) {
+        return <p className="page-message page-message--error">Task not found. <button className="app-button" onClick={() => nav('/tasks')}>Back to Tasks</button></p>
+    }
 
     return (
         <div className="detail-page">
@@ -85,7 +111,7 @@ function TaskDetail() {
                     <div className="detail-item">
                         <strong>Due Date</strong>
                         <div className="due-date-cell">
-                            <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            <span>{formatTaskDate(task.dueDate)}</span>
                             {isTaskOverdue(task.dueDate, task.status) && (
                                 <span className="status-pill due-status--overdue">Past Due</span>
                             )}
