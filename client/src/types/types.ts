@@ -32,6 +32,7 @@ export type Project = {
   description: string
   status: string
   priority: string
+  resources?: Resource[] | null
   tasks?: Task[] | null
   assignee?: string | User | null
 }
@@ -49,6 +50,7 @@ export type ProgressEntry = {
 
 export type Resource = {
   _id?: string
+  project?: string | Project | null
   title: string
   description: string
   budget: number
@@ -78,7 +80,7 @@ export type DashboardTask = {
   title: string
   status: string
   dueDate: string
-  project?: {
+  resource?: {
     _id?: string
     title?: string
   }
@@ -88,6 +90,7 @@ export type DashboardStats = {
   totals: {
     tasks: number
     resources: number
+    projects: number
     users: number
   }
   tasksByStatus: Array<{

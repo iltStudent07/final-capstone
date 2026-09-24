@@ -2,8 +2,17 @@ import { Router } from 'express'
 import Project, { PROJECT_PRIORITIES, PROJECT_STATUSES } from '../models/Project.js'
 import { auth } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
+import { type AuthenticatedRequest } from '../middleware/auth.js'
 
 const router = Router()
+
+const getAuthRole = (req: AuthenticatedRequest) => {
+  const user = req.user
+
+  if (!user || typeof user !== 'object') return undefined
+
+  return typeof user.role === 'string' ? user.role : undefined
+}
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null
@@ -16,7 +25,7 @@ const projectBodyValidator = (body: unknown): string[] => {
     return ['Request body is required']
   }
 
-  if (typeof body.title !== 'string' || body.title.trim().length < 2) {
+  if (typeof body.title !== 'undefined' && (typeof body.title !== 'string' || body.title.trim().length < 2)) {
     errors.push('Project title must be at least 2 characters long')
   }
 
@@ -40,6 +49,10 @@ const projectBodyValidator = (body: unknown): string[] => {
     errors.push('Project tasks must be an array')
   }
 
+  if (body.resources !== undefined && !Array.isArray(body.resources)) {
+    errors.push('Project resources must be an array')
+  }
+
   return errors
 }
 
@@ -56,6 +69,19 @@ const validateQueryFilters = (status?: string, priority?: string): string[] => {
 
   return errors
 }
+
+const projectPopulateOptions = [
+  { path: 'assignee', select: 'name email role' },
+  {
+    path: 'resources',
+    select: 'title status budget owner collaborators',
+    populate: [
+      { path: 'owner', select: 'name email role' },
+      { path: 'collaborators', select: 'name email role' },
+    ],
+  },
+  { path: 'tasks', select: 'title status priority' },
+]
 
 router.get('/', async (req, res, next) => {
   try {
@@ -90,8 +116,7 @@ router.get('/', async (req, res, next) => {
 
     const [projects, total] = await Promise.all([
       Project.find(query)
-        .populate('assignee', 'name email role')
-        .populate('tasks', 'title status priority')
+        .populate(projectPopulateOptions)
         .sort({ createdAt: -1 })
         .skip((normalizedPage - 1) * normalizedLimit)
         .limit(normalizedLimit)
@@ -115,13 +140,21 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', auth, validate(projectBodyValidator), async (req, res, next) => {
   try {
-    const { title, description = '', status, priority, assignee, tasks = [] } = req.body as {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot create projects' })
+      return
+    }
+
+    const { title, description = '', status, priority, assignee, tasks = [], resources = [] } = req.body as {
       title: string
       description?: string
       status?: (typeof PROJECT_STATUSES)[number]
       priority?: (typeof PROJECT_PRIORITIES)[number]
       assignee?: string | null
       tasks?: string[]
+      resources?: string[]
     }
 
     const project = await Project.create({
@@ -131,11 +164,11 @@ router.post('/', auth, validate(projectBodyValidator), async (req, res, next) =>
       priority,
       assignee: assignee ?? null,
       tasks,
+      resources,
     })
 
     const populatedProject = await Project.findById(project._id)
-      .populate('assignee', 'name email role')
-      .populate('tasks', 'title status priority')
+      .populate(projectPopulateOptions)
 
     res.status(201).json(populatedProject)
   } catch (error) {
@@ -146,8 +179,7 @@ router.post('/', auth, validate(projectBodyValidator), async (req, res, next) =>
 router.get('/:id', async (req, res, next) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('assignee', 'name email role')
-      .populate('tasks', 'title status priority')
+      .populate(projectPopulateOptions)
 
     if (!project) {
       res.status(404).json({ message: 'Project not found' })
@@ -162,12 +194,18 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', auth, validate(projectBodyValidator), async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot edit projects' })
+      return
+    }
+
     const project = await Project.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     })
-      .populate('assignee', 'name email role')
-      .populate('tasks', 'title status priority')
+      .populate(projectPopulateOptions)
 
     if (!project) {
       res.status(404).json({ message: 'Project not found' })
@@ -182,6 +220,13 @@ router.put('/:id', auth, validate(projectBodyValidator), async (req, res, next) 
 
 router.delete('/:id', auth, async (req, res, next) => {
   try {
+    const role = getAuthRole(req as AuthenticatedRequest)
+
+    if (role === 'member') {
+      res.status(403).json({ message: 'Members cannot delete projects' })
+      return
+    }
+
     const project = await Project.findByIdAndDelete(req.params.id)
 
     if (!project) {

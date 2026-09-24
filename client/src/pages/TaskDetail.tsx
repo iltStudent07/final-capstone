@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Task } from '../types/types'
 
 function TaskDetail() {
+    const { user } = useAuth()
     const { id } = useParams<{id: string}>()
     const nav = useNavigate()
     const [task, setTask] = useState<Task | null>(null)
@@ -52,6 +54,19 @@ function TaskDetail() {
         }
     }
 
+    const isTaskOverdue = (dueDate?: string | Date, taskStatus?: string) => {
+        if (!dueDate || taskStatus === 'done') return false
+
+        const due = new Date(dueDate)
+
+        if (Number.isNaN(due.getTime())) return false
+
+        const endOfDueDate = new Date(due)
+        endOfDueDate.setHours(23, 59, 59, 999)
+
+        return endOfDueDate < new Date()
+    }
+
     if (loading) return <p className="page-message">Loading task...</p>
     if (!task) return <p className="page-message page-message--error">Task not found. <button className="app-button" onClick={() => nav('/tasks')}>Back to Tasks</button></p>
 
@@ -67,7 +82,15 @@ function TaskDetail() {
 
             <div className="detail-card">
                 <div className="detail-grid">
-                    <div className="detail-item"><strong>Due Date</strong>{new Date(task.dueDate).toLocaleDateString()}</div>
+                    <div className="detail-item">
+                        <strong>Due Date</strong>
+                        <div className="due-date-cell">
+                            <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            {isTaskOverdue(task.dueDate, task.status) && (
+                                <span className="status-pill due-status--overdue">Past Due</span>
+                            )}
+                        </div>
+                    </div>
                     <div className="detail-item"><strong>Priority</strong>{task.priority}</div>
                     <div className="detail-item"><strong>Status</strong>{task.status}</div>
                 </div>
@@ -93,11 +116,13 @@ function TaskDetail() {
                 <p>{task.details}</p>
             </div>
 
-            <div className="detail-actions">
-                <button onClick={handleDelete} className="app-button app-button--danger">
-                    Delete Task
-                </button>
-            </div>
+            {user?.role === 'admin' && (
+                <div className="detail-actions">
+                    <button onClick={handleDelete} className="app-button app-button--danger">
+                        Delete Task
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

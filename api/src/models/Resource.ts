@@ -14,6 +14,7 @@ interface ProgressEntry {
 }
 
 export interface IResource {
+  project: Types.ObjectId
   title: string
   description: string
   budget: number
@@ -66,6 +67,11 @@ const progressEntrySchema = new Schema<ProgressEntry>(
 
 const resourceSchema = new Schema<IResource>(
   {
+    project: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project',
+      required: true,
+    },
     title: {
       type: String,
       required: true,
