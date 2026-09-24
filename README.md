@@ -360,10 +360,203 @@ npm run preview  # Preview production build
 
 ## Deployment
 
+### Docker Compose (Local)
+
+See the [Docker Setup](#docker-setup) section above.
+
+### EKS (Kubernetes) Deployment
+
+#### Prerequisites
+
+1. **AWS Account** with appropriate credentials and permissions
+2. **AWS CLI** installed and configured
+3. **eksctl** installed
+4. **kubectl** installed
+
+**Install on Linux:**
+```bash
+# AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# eksctl
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+sudo mv /tmp/eksctl /usr/local/bin
+
+# kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+```
+
+#### Step 1: Configure AWS Credentials
+
+```bash
+aws configure
+```
+
+When prompted, enter:
+- **AWS Access Key ID**: [Get from AWS IAM Console]
+- **AWS Secret Access Key**: [Get from AWS IAM Console]
+- **Default region name**: us-east-1
+- **Default output format**: json
+
+**Get credentials from AWS:**
+1. Go to [AWS IAM Console](https://console.aws.amazon.com/iam/)
+2. Click Users → Select your user
+3. Click Security credentials → Create access key
+4. Copy the Access Key ID and Secret Access Key
+
+Or use environment variables:
+```bash
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export AWS_REGION="us-east-1"
+```
+
+#### Step 2: Create EKS Cluster
+
+```bash
+eksctl create cluster --name capstone --region us-east-1 --nodes 2 --node-type t3.medium
+```
+
+This will take ~15-20 minutes. While waiting, you can build Docker images:
+```bash
+# In another terminal
+cd api && docker build -t final-capstone-api:latest .
+cd ../client && docker build -t final-capstone-client:latest .
+```
+
+#### Step 3: Verify Cluster Connection
+
+```bash
+# Update kubeconfig
+aws eks update-kubeconfig --name capstone --region us-east-1
+
+# Verify connection
+kubectl get nodes
+kubectl get pods --all-namespaces
+```
+
+#### Step 4: Push Docker Images to ECR
+
+Before deploying, push your Docker images to Amazon ECR:
+
+```bash
+# Create ECR repositories
+aws ecr create-repository --repository-name capstone-api --region us-east-1
+aws ecr create-repository --repository-name capstone-client --region us-east-1
+
+# Login to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com
+
+# Tag and push API image
+docker tag final-capstone-api:latest $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/capstone-api:latest
+docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/capstone-api:latest
+
+# Tag and push Client image
+docker tag final-capstone-client:latest $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/capstone-client:latest
+docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/capstone-client:latest
+```
+
+Then update the image names in `k8s/api.yaml` and `k8s/client.yaml`:
+```yaml
+image: <account-id>.dkr.ecr.us-east-1.amazonaws.com/capstone-api:latest
+image: <account-id>.dkr.ecr.us-east-1.amazonaws.com/capstone-client:latest
+```
+
+#### Step 5: Deploy to EKS
+
+```bash
+# Apply all Kubernetes manifests
+kubectl apply -f k8s/
+
+# Verify deployments
+kubectl get pods -n capstone
+kubectl get svc -n capstone
+
+# Check pod logs
+kubectl logs -n capstone deployment/api
+kubectl logs -n capstone deployment/client
+```
+
+#### Step 6: Access Your Application
+
+```bash
+# Get LoadBalancer external IP
+kubectl get svc -n capstone client
+
+# Wait for LoadBalancer to get an External IP (may take a few minutes)
+# Then access:
+# http://<EXTERNAL-IP>        → Landing page
+# http://<EXTERNAL-IP>/app/   → React application
+```
+
+#### Step 7: Update MongoDB Connection
+
+If using MongoDB Atlas instead of in-cluster:
+
+```bash
+# Update the secret with your MongoDB Atlas connection string
+kubectl create secret generic capstone-secrets \
+  --from-literal=MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net/capstone" \
+  --from-literal=JWT_SECRET="your-production-secret" \
+  -n capstone --dry-run=client -o yaml | kubectl apply -f -
+
+# Restart pods to pick up new secret
+kubectl rollout restart deployment/api -n capstone
+```
+
+#### Kubernetes Manifests
+
+The `k8s/` directory contains:
+
+- **namespace.yaml** - `capstone` namespace for isolation
+- **secrets.yaml** - MongoDB URI and JWT secret
+- **mongo.yaml** - MongoDB deployment + persistent storage
+- **api.yaml** - API deployment (2 replicas) with health checks
+- **client.yaml** - Client deployment (2 replicas) with LoadBalancer
+
+#### Troubleshooting EKS
+
+**Cluster won't create:**
+```bash
+# Check AWS credentials
+aws sts get-caller-identity
+
+# Check IAM permissions (user needs EKS permissions)
+# See: https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html
+```
+
+**Pods stuck in Pending:**
+```bash
+kubectl describe pod <pod-name> -n capstone
+kubectl logs <pod-name> -n capstone
+```
+
+**ImagePullBackOff error:**
+- Images must be in ECR or publicly available
+- Ensure image tags in manifests are correct
+- Check ECR login: `aws ecr get-login-password --region us-east-1 | docker login ...`
+
+**LoadBalancer stuck in Pending:**
+```bash
+# Wait a few minutes for AWS to provision the load balancer
+kubectl get svc -n capstone --watch
+```
+
+#### Cleanup
+
+Delete the EKS cluster when done:
+```bash
+eksctl delete cluster --name capstone --region us-east-1
+```
+
 See `.github/workflows/ci.yml` for CI/CD configuration. The workflow:
 1. Runs linting and tests on every PR
 2. Builds Docker images if Dockerfiles exist
-3. Can be extended for deployment to EKS or other platforms
+3. Can be extended for automatic EKS deployment
+
 
 ## Support
 
