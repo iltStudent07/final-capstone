@@ -118,6 +118,48 @@ describe('Tasks Page', () => {
     expect(submitButton).toBeEnabled()
   })
 
+  test('blocks invalid special characters in task title input', async () => {
+    render(
+      <MemoryRouter>
+        <Tasks />
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /New Task/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Create New Task/i })).toBeInTheDocument()
+    })
+
+    const titleInput = screen.getByPlaceholderText('Task title') as HTMLInputElement
+
+    fireEvent.change(titleInput, { target: { value: 'Task@Name' } })
+
+    expect(titleInput.value).toBe('')
+    expect(screen.getByText('Task title contains invalid characters.')).toBeInTheDocument()
+  })
+
+  test('truncates task descriptions to 100 characters', async () => {
+    render(
+      <MemoryRouter>
+        <Tasks />
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /New Task/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Create New Task/i })).toBeInTheDocument()
+    })
+
+    const descriptionInput = screen.getByPlaceholderText('Description of task') as HTMLInputElement
+    const longDescription = 'a'.repeat(120)
+
+    fireEvent.change(descriptionInput, { target: { value: longDescription } })
+
+    expect(descriptionInput.value).toHaveLength(100)
+  })
+
   test('tasks from the database show up in the table', async () => {
     const mockTasks = [
       {
