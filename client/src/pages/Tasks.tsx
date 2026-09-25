@@ -2,6 +2,13 @@ import { useEffect, useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import type { Task, Resource } from '../types/types'
+import {
+  DESCRIPTION_MAX_LENGTH,
+  getLiveValidationError,
+  normalizeValidatedValue,
+  validateDescription,
+  validateTitle,
+} from '../utils/validation'
 
 interface PaginationData {
   page: number
@@ -26,6 +33,7 @@ function Tasks() {
     status: '',
     search: '',
   })
+  const [searchError, setSearchError] = useState<string | null>(null)
 
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -96,8 +104,38 @@ function Tasks() {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
+  const handleSearchChange = (value: string) => {
+    const validationError = getLiveValidationError('search', value, 'Search')
+
+    if (validationError) {
+      setSearchError(validationError)
+      return
+    }
+
+    setSearchError(null)
+    handleFilterChange('search', value)
+  }
+
   const handleFormChange = (key: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleValidatedFormChange = (
+    key: 'title' | 'details',
+    value: string,
+    rule: 'title' | 'description',
+    label: string,
+  ) => {
+    const normalizedValue = normalizeValidatedValue(rule, value)
+    const validationError = getLiveValidationError(rule, normalizedValue, label)
+
+    if (validationError) {
+      setFormError(validationError)
+      return
+    }
+
+    setFormError(null)
+    handleFormChange(key, normalizedValue)
   }
 
   const handleSubmitTask = async (e: SubmitEvent<HTMLFormElement>) => {
@@ -106,8 +144,24 @@ function Tasks() {
     setFormLoading(true)
 
     try {
-      if (!formData.title || !formData.resource || !formData.details || !formData.priority || !formData.dueDate) {
-        setFormError('Title, resource, details, priority and due date are required')
+      const titleError = validateTitle(formData.title, 'Task title')
+
+      if (titleError) {
+        setFormError(titleError)
+        setFormLoading(false)
+        return
+      }
+
+      const detailsError = validateDescription(formData.details, 'Task description', true)
+
+      if (detailsError) {
+        setFormError(detailsError)
+        setFormLoading(false)
+        return
+      }
+
+      if (!formData.resource || !formData.priority || !formData.dueDate) {
+        setFormError('Resource, priority, and due date are required')
         setFormLoading(false)
         return
       }
@@ -192,7 +246,7 @@ function Tasks() {
                   className="form-control"
                   type="text"
                   value={formData.title}
-                  onChange={(e) => handleFormChange('title', e.target.value)}
+                  onChange={(e) => handleValidatedFormChange('title', e.target.value, 'title', 'Task title')}
                   placeholder="Task title"
                 />
               </div>
@@ -217,8 +271,9 @@ function Tasks() {
                   className="form-control"
                   type="text"
                   value={formData.details}
-                  onChange={(e) => handleFormChange('details', e.target.value)}
+                  onChange={(e) => handleValidatedFormChange('details', e.target.value, 'description', 'Task description')}
                   placeholder="Description of task"
+                  maxLength={DESCRIPTION_MAX_LENGTH}
                 />
               </div>
 
@@ -280,10 +335,11 @@ function Tasks() {
           <input
             type="text"
             value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by task title or description..."
             className="form-control"
           />
+          {searchError && <p className="form-error">{searchError}</p>}
         </div>
 
         <div className="filter-group filter-group--narrow">

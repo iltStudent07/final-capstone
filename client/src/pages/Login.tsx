@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthProvider'
+import { getLiveValidationError, validateEmail, validatePassword } from '../utils/validation'
 
 function Login() {
     const [email, setEmail] = useState('')
@@ -9,6 +10,30 @@ function Login() {
     const [error, setError] = useState('')
     const nav = useNavigate()
     const { login } = useAuth()
+
+    const handleEmailChange = (value: string) => {
+        const validationError = getLiveValidationError('email', value, 'Email')
+
+        if (validationError) {
+            setError(validationError)
+            return
+        }
+
+        setEmail(value)
+        setError('')
+    }
+
+    const handlePasswordChange = (value: string) => {
+        const validationError = getLiveValidationError('password', value, 'Password')
+
+        if (validationError) {
+            setError(validationError)
+            return
+        }
+
+        setPassword(value)
+        setError('')
+    }
 
     return (
         <div className="auth-page">
@@ -18,6 +43,20 @@ function Login() {
             <form
                 className="auth-form"
                 onSubmit={async e=>{e.preventDefault()
+                    const emailError = validateEmail(email)
+
+                    if (emailError) {
+                        setError(emailError)
+                        return
+                    }
+
+                    const passwordError = validatePassword(password)
+
+                    if (passwordError) {
+                        setError(passwordError)
+                        return
+                    }
+
                     try {
                         await login(email, password)
                         nav('/dashboard')
@@ -25,9 +64,9 @@ function Login() {
                         setError("Email or Password is incorrect")
                     }
                 }}>
-                <input className="form-control" type='email' value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email"/>
+                <input className="form-control" type='email' value={email} onChange={e=>handleEmailChange(e.target.value)} placeholder="Email"/>
 
-                <input className="form-control" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password"/>
+                <input className="form-control" type="password" value={password} onChange={e=>handlePasswordChange(e.target.value)} placeholder="Password"/>
 
                 <button className="app-button app-button--primary auth-submit">Login</button>
             </form>

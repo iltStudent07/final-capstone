@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Project, User } from '../types/types'
+import {
+  DESCRIPTION_MAX_LENGTH,
+  getLiveValidationError,
+  normalizeValidatedValue,
+  validateDescription,
+  validateTitle,
+} from '../utils/validation'
 
 interface PaginationData {
   page: number
@@ -27,6 +34,7 @@ function Projects() {
     status: '',
     search: '',
   })
+  const [searchError, setSearchError] = useState<string | null>(null)
 
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -100,8 +108,38 @@ function Projects() {
     setPagination((prev) => ({ ...prev, page: 1 }))
   }
 
+  const handleSearchChange = (value: string) => {
+    const validationError = getLiveValidationError('search', value, 'Search')
+
+    if (validationError) {
+      setSearchError(validationError)
+      return
+    }
+
+    setSearchError(null)
+    handleFilterChange('search', value)
+  }
+
   const handleFormChange = (key: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleValidatedFormChange = (
+    key: 'title' | 'description',
+    value: string,
+    rule: 'title' | 'description',
+    label: string,
+  ) => {
+    const normalizedValue = normalizeValidatedValue(rule, value)
+    const validationError = getLiveValidationError(rule, normalizedValue, label)
+
+    if (validationError) {
+      setFormError(validationError)
+      return
+    }
+
+    setFormError(null)
+    handleFormChange(key, normalizedValue)
   }
 
   const isValidObjectId = (value: string) => /^[0-9a-fA-F]{24}$/.test(value.trim())
@@ -112,8 +150,18 @@ function Projects() {
     setFormLoading(true)
 
     try {
-      if (!formData.title || !formData.description) {
-        setFormError('Project title and description are required')
+      const titleError = validateTitle(formData.title, 'Project title')
+
+      if (titleError) {
+        setFormError(titleError)
+        setFormLoading(false)
+        return
+      }
+
+      const descriptionError = validateDescription(formData.description, 'Project description', true)
+
+      if (descriptionError) {
+        setFormError(descriptionError)
         setFormLoading(false)
         return
       }
@@ -223,7 +271,7 @@ function Projects() {
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => handleFormChange('title', e.target.value)}
+                  onChange={(e) => handleValidatedFormChange('title', e.target.value, 'title', 'Project title')}
                   placeholder="Project title"
                   className="form-control"
                 />
@@ -252,9 +300,10 @@ function Projects() {
                 <input
                   type="text"
                   value={formData.description}
-                  onChange={(e) => handleFormChange('description', e.target.value)}
+                  onChange={(e) => handleValidatedFormChange('description', e.target.value, 'description', 'Project description')}
                   placeholder="Project description"
                   className="form-control"
+                  maxLength={DESCRIPTION_MAX_LENGTH}
                 />
               </div>
 
@@ -306,10 +355,11 @@ function Projects() {
           <input
             type="text"
             value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by project title or description..."
             className="form-control"
           />
+          {searchError && <p className="form-error">{searchError}</p>}
         </div>
 
         <div className="filter-group filter-group--narrow">
