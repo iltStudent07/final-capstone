@@ -209,4 +209,97 @@ describe('Tasks Page', () => {
       expect(screen.getByText('Resource 2')).toBeInTheDocument()
     })
   })
+
+  test('search input refreshes the table with matching tasks', async () => {
+    mockApi.get.mockImplementation((url) => {
+      if (typeof url === 'string' && url.includes('/resources')) {
+        return Promise.resolve({
+          data: {
+            data: [],
+            pagination: {
+              page: 1,
+              limit: 10,
+              total: 0,
+              totalPages: 0,
+            },
+          },
+        })
+      }
+
+      if (typeof url === 'string' && url.includes('search=Two')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                _id: '2',
+                title: 'Task Two',
+                details: 'Second task description',
+                status: 'in-progress',
+                priority: 'medium',
+                dueDate: '2026-10-20',
+                resource: { _id: 'res2', title: 'Resource 2' },
+              },
+            ],
+            pagination: {
+              page: 1,
+              limit: 10,
+              total: 1,
+              totalPages: 1,
+            },
+          },
+        })
+      }
+
+      return Promise.resolve({
+        data: {
+          data: [
+            {
+              _id: '1',
+              title: 'Task One',
+              details: 'First task description',
+              status: 'todo',
+              priority: 'high',
+              dueDate: '2026-10-10',
+              resource: { _id: 'res1', title: 'Resource 1' },
+            },
+            {
+              _id: '2',
+              title: 'Task Two',
+              details: 'Second task description',
+              status: 'in-progress',
+              priority: 'medium',
+              dueDate: '2026-10-20',
+              resource: { _id: 'res2', title: 'Resource 2' },
+            },
+          ],
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: 2,
+            totalPages: 1,
+          },
+        },
+      })
+    })
+
+    render(
+      <MemoryRouter>
+        <Tasks />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Task One')).toBeInTheDocument()
+      expect(screen.getByText('Task Two')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByPlaceholderText('Search by task title or description...'), {
+      target: { value: 'Two' },
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText('Task One')).not.toBeInTheDocument()
+      expect(screen.getByText('Task Two')).toBeInTheDocument()
+    })
+  })
 })
