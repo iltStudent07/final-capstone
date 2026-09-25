@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthProvider'
+import { getLiveValidationError, validateEmail, validateName, validatePassword } from '../utils/validation'
 
 function Register() {
   const [name, setName] = useState('')
@@ -11,6 +12,42 @@ function Register() {
   const nav = useNavigate()
   const { register } = useAuth()
 
+  const handleNameChange = (value: string) => {
+    const validationError = getLiveValidationError('name', value, 'Name')
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setName(value)
+    setError('')
+  }
+
+  const handleEmailChange = (value: string) => {
+    const validationError = getLiveValidationError('email', value, 'Email')
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setEmail(value)
+    setError('')
+  }
+
+  const handlePasswordChange = (value: string) => {
+    const validationError = getLiveValidationError('password', value, 'Password')
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setPassword(value)
+    setError('')
+  }
+
   return (
     <div className="auth-page">
       <div className="panel auth-card">
@@ -20,6 +57,28 @@ function Register() {
           className="auth-form"
           onSubmit={async (e) => {
             e.preventDefault()
+
+            const nameError = validateName(name)
+
+            if (nameError) {
+              setError(nameError)
+              return
+            }
+
+            const emailError = validateEmail(email)
+
+            if (emailError) {
+              setError(emailError)
+              return
+            }
+
+            const passwordError = validatePassword(password)
+
+            if (passwordError) {
+              setError(passwordError)
+              return
+            }
+
             try {
               await register(name, email, password, role)
               nav('/login')
@@ -28,11 +87,11 @@ function Register() {
             }
           }}
         >
-          <input className="form-control" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+          <input className="form-control" type="text" value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="Name" />
 
-          <input className="form-control" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+          <input className="form-control" type="email" value={email} onChange={(e) => handleEmailChange(e.target.value)} placeholder="Email" />
 
-          <input className="form-control" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
+          <input className="form-control" type="password" value={password} onChange={(e) => handlePasswordChange(e.target.value)} placeholder="Password" />
 
           <select className="form-control" value={role} onChange={(e) => setRole(e.target.value as 'admin' | 'member')}>
             <option value="member">Member</option>

@@ -3,6 +3,14 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthProvider'
 import api from '../services/api'
 import type { Project, Resource, User } from '../types/types'
+import {
+    DESCRIPTION_MAX_LENGTH,
+    getLiveValidationError,
+    normalizeValidatedValue,
+    validateDescription,
+    validateTags,
+    validateTitle,
+} from '../utils/validation'
 
 function ProjectDetail() {
     const { user } = useAuth()
@@ -103,7 +111,29 @@ function ProjectDetail() {
     }
 
     const handleResourceFormChange = (key: keyof typeof resourceFormData, value: string) => {
-        setResourceFormData((prev) => ({ ...prev, [key]: value }))
+        let nextValue = value
+        let validationError: string | null = null
+
+        if (key === 'title') {
+            validationError = getLiveValidationError('title', value, 'Resource title')
+        }
+
+        if (key === 'description') {
+            nextValue = normalizeValidatedValue('description', value)
+            validationError = getLiveValidationError('description', nextValue, 'Resource description')
+        }
+
+        if (key === 'tags') {
+            validationError = getLiveValidationError('tags', value, 'Tags')
+        }
+
+        if (validationError) {
+            setResourceFormError(validationError)
+            return
+        }
+
+        setResourceFormError(null)
+        setResourceFormData((prev) => ({ ...prev, [key]: nextValue }))
     }
 
     const handleCollaboratorsChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -123,8 +153,32 @@ function ProjectDetail() {
         setResourceFormLoading(true)
 
         try {
-            if (!resourceFormData.title || !resourceFormData.budget || !resourceFormData.startDate || !resourceFormData.endDate) {
-                setResourceFormError('Title, budget, sprint start date and sprint end date are required')
+            const titleError = validateTitle(resourceFormData.title, 'Resource title')
+
+            if (titleError) {
+                setResourceFormError(titleError)
+                setResourceFormLoading(false)
+                return
+            }
+
+            const descriptionError = validateDescription(resourceFormData.description, 'Resource description')
+
+            if (descriptionError) {
+                setResourceFormError(descriptionError)
+                setResourceFormLoading(false)
+                return
+            }
+
+            const tagsError = validateTags(resourceFormData.tags)
+
+            if (tagsError) {
+                setResourceFormError(tagsError)
+                setResourceFormLoading(false)
+                return
+            }
+
+            if (!resourceFormData.budget || !resourceFormData.startDate || !resourceFormData.endDate) {
+                setResourceFormError('Budget, sprint start date and sprint end date are required')
                 setResourceFormLoading(false)
                 return
             }
@@ -314,6 +368,7 @@ function ProjectDetail() {
                                     value={resourceFormData.description}
                                     onChange={(e) => handleResourceFormChange('description', e.target.value)}
                                     placeholder="Resource description"
+                                    maxLength={DESCRIPTION_MAX_LENGTH}
                                 />
                             </div>
 

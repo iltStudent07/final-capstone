@@ -4,6 +4,8 @@ import { auth, type AuthenticatedRequest } from '../middleware/auth.js'
 
 const router = Router()
 
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 type AuthUser = {
   id: string
   role?: string
@@ -27,6 +29,11 @@ const getAuthUser = (req: AuthenticatedRequest): AuthUser | null => {
 router.get('/', auth, async (req, res, next) => {
   try {
     const authUser = getAuthUser(req as AuthenticatedRequest)
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : undefined
+    const page = Number(req.query.page ?? 1)
+    const limit = Number(req.query.limit ?? 10)
+    const normalizedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1
+    const normalizedLimit = Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 50) : 10
     const query = Task.find()
 
     if (authUser?.role === 'member') {
@@ -49,12 +56,35 @@ router.get('/', auth, async (req, res, next) => {
       query.where('resource').equals(req.query.resource)
     }
 
-    const tasks = await query
-      .populate('assignee', 'name email role')
-      .populate('resource', 'title status owner')
-      .sort({ createdAt: -1 })
+    if (search) {
+      const safeSearch = escapeRegex(search)
+      query.or([
+        { title: { $regex: safeSearch, $options: 'i' } },
+        { details: { $regex: safeSearch, $options: 'i' } },
+      ])
+    }
 
-    res.json(tasks)
+    const countQuery = query.model.find(query.getFilter())
+
+    const [tasks, total] = await Promise.all([
+      query
+        .populate('assignee', 'name email role')
+        .populate('resource', 'title status owner')
+        .sort({ createdAt: -1 })
+        .skip((normalizedPage - 1) * normalizedLimit)
+        .limit(normalizedLimit),
+      countQuery.countDocuments(),
+    ])
+
+    res.json({
+      data: tasks,
+      pagination: {
+        page: normalizedPage,
+        limit: normalizedLimit,
+        total,
+        totalPages: Math.ceil(total / normalizedLimit) || 1,
+      },
+    })
   } catch (error) {
     next(error)
   }
